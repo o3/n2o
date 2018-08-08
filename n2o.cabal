@@ -1,0 +1,82 @@
+name:           n2o
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o.hs#readme>
+homepage:       https://github.com/xafizoff/n2o.hs#readme
+bug-reports:    https://github.com/xafizoff/n2o.hs/issues
+author:         Marat Khafizov
+maintainer:     xafizoff@gmail.com
+copyright:      All rights reserved (c)
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    ChangeLog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/xafizoff/n2o.hs
+
+library
+  exposed-modules:
+                  Network.N2O
+                , Network.N2O.Nitro
+  other-modules:
+      Paths_n2o
+  hs-source-dirs:
+      src
+  build-depends: base >=4.7 && < 5
+               , wai >= 3.2 && < 4
+               , wai-websockets
+               , websockets
+               , bytestring == 0.10.*
+               , http-types
+               , warp
+               , text
+               , safe
+               , binary
+               , bert
+               , containers
+               , stm
+               , uuid
+               , mtl
+               , base64-bytestring
+               , wai-middleware-static
+               , safe-exceptions
+               , fmt
+  default-language: Haskell2010
+
+executable n2o-sample
+  main-is: Server.hs
+  other-modules:
+      Paths_n2o
+  hs-source-dirs:
+      sample
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+                base >=4.7 && < 5
+              , n2o
+              , binary
+              , text
+              , wai
+              , http-types
+              , bytestring
+              , wai-middleware-static
+              , bert
+              , mtl
+              , fmt
+  default-language: Haskell2010
+
+test-suite n2o-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_n2o
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+                base >=4.7 && < 5
+              , n2o
+  default-language: Haskell2010
