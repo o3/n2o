@@ -170,10 +170,12 @@ void = return "void(0);"
 alert :: Monad m => T.Text -> m Action
 alert s = return $ "alert('" <> s <> "');"
 
-insertBottom :: Monad m => String -> String -> [Element] -> m Action
-insertBottom tag target elems = do
-  content <- renderElements elems
-  let action =
+insertBottom :: Monad m => String -> Element -> m Action
+insertBottom target elem = do
+  content <- renderElement elem
+  let
+    tag = "div" :: String
+    action =
         "(function(){ var div = qn('" +| tag |+ "'); div.innerHTML = '"
         +| content |+ "';qi('" +| target |+
         "').appendChild(div.firstChild); })();"

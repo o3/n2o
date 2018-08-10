@@ -31,16 +31,14 @@ handle ["init"] = do
   e <-
     mconcat
       [ insertBottom
-          "div"
           "app"
-          [ panel
-              { body =
-                  [ panel {id = "history"}
-                  , textbox {id = "msg"}
-                  , button {id = "btn", body = [Text "Chat"]}
-                  ]
-              }
-          ]
+          panel
+            { body =
+                [ panel {id = "history"}
+                , textbox {id = "msg"}
+                , button {id = "btn", body = [Text "Chat"]}
+                ]
+            }
       , renderEvent
           event
             { eventTarget = "btn"
@@ -56,8 +54,9 @@ handle ["chat"] = do
   (LocalState {..}, _) <- ask
   Just (BytelistTerm x) <- q "msg"
   msg <-
-    insertBottom "span" "history" $
-    [panel {body = [text $ clientId |+ ": " +| b2t x |+ "" , br]}]
+    insertBottom
+      "history"
+      panel {body = [text $ clientId |+ ": " +| b2t x |+ "", br]}
   broadcast msg
   send "qi('msg').value='';"
 
