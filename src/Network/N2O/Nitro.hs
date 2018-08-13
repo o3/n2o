@@ -1,7 +1,5 @@
-{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TypeFamilies      #-}
 
 module Network.N2O.Nitro where
 
@@ -17,12 +15,9 @@ import           Data.String
 import qualified Data.Text                   as T
 import           Fmt
 import           Fmt.Internal.Core
+-- import           GHC.Generics
+-- import           Network.N2O.Generic
 import           Prelude                     hiding (id)
-
-instance IsString Term where
-  fromString ""                  = NilTerm
-  fromString ('b':'i':'n':':':s) = BinaryTerm $ C8.pack s
-  fromString s                   = AtomTerm s
 
 instance FromBuilder Term where
   fromBuilder t = AtomTerm $ fromBuilder t
@@ -33,10 +28,10 @@ type Action = T.Text
 
 data Element
   = Element { name      :: String
-            , id        :: Term
+            , id        :: String
             , body      :: [Element]
-            , postback  :: Term
-            , source    :: [Term]
+            , postback  :: Maybe Int
+            , source    :: [String]
             , noBody    :: Bool
             , noClosing :: Bool
             }
@@ -45,19 +40,19 @@ data Element
 
 -- data EventType = Click deriving (Show)
 data Event = Event
-  { eventTarget   :: Term
-  , eventPostback :: Term
-  , eventType     :: Term
-  , eventSource   :: [Term]
+  { eventTarget   :: String
+  , eventPostback :: Maybe Int
+  , eventType     :: String
+  , eventSource   :: [String]
   } deriving (Show)
 
-pickle :: Term -> String
-pickle =  C8.unpack . encode . Bin.encode
+-- pickle :: Term -> String
+-- pickle =  C8.unpack . encode . Bin.encode
 
-depickle :: BL.ByteString -> Term
-depickle b = case decode b of
-  Left e   -> error e
-  Right bs -> Bin.decode bs
+-- depickle :: BL.ByteString -> Term
+-- depickle b = case decode b of
+--   Left e   -> error e
+--   Right bs -> Bin.decode bs
 
 -- Erlang N2O polymorphism of render function:
 -- each record has 'module' field - it is the dispatch value
@@ -71,34 +66,20 @@ renderEvent Event {..} =
     [] -> void
     src ->
       case eventPostback of
-        "" -> void
-        pb ->
+        Nothing -> void
+        Just pb ->
           return $
             "{ var x=qi('" +| eventTarget |+ "'); x && x.addEventListener('"
-            +| eventType |+ "',function(event){"
-            +| (postbackString pb eventTarget $ dataString src) |+ "});};"
+            +| eventType |+ "',function(event){ if (validateSources("
+            +| (strJoin $ map (\x -> "'" ++ x ++  "'") eventSource) |+
+            ")) { ws.send(enc_("
+            +| pb |+ ", ["
+            +| (strJoin $ map renderSource src) |+
+            "])); } else console.log('Validation error'); }"
   where
-    postbackString :: Term -> Term -> String -> String
-    postbackString pb el dat =
-      "{ if (validateSources(" +| terms2str eventSource |+
-      ")) {ws.send(enc(tuple(atom('pickle'),bin('" +| el |+
-      "'),bin('" +| pickle pb |+ "')," +| dat |+ "))); } else console.log('Validation Error'); }"
-    dataString src =
-      "[tuple(tuple(utf8_toByteArray('" +| eventTarget |+ "'),bin('detail')),[]),"
-      +| (concat $ intersperse "," $ map renderSource src) |+ "]"
-    renderSource s =
-      "tuple(utf8_toByteArray('" +| s |+"'),querySource('" +| s |+"'))"
-    terms2str [] = "[]"
-    terms2str l =
-      "[" ++
-      (concat $
-       intersperse "," $
-       map
-         (\t ->
-            case t of
-              AtomTerm a -> "'" ++ a ++ "'")
-         l) ++
-      "]"
+    renderSource s = "querySource('" +| s |+"')"
+    strJoin [] = "[]"
+    strJoin l  = "[" ++ (concat $ intersperse "," l) ++ "]"
 
 
 renderElements :: Monad m => [Element] -> m Action
@@ -125,11 +106,11 @@ renderElement Element {..} = do
       return $
         T.pack $
         if noBody
-          then "<" +| name |+ " " +| idProp id |+ "/>"
-          else "<" +| name |+ " " +| idProp id |+ ">" +| content |+ "</" +| name |+
+          then "<" +| name |+ " " +| (idProp id) |+ "/>"
+          else "<" +| name |+ " " +| (idProp id) |+ ">" +| content |+ "</" +| name |+
                ">"
   where
-    idProp :: Term -> String
+    idProp :: String -> String
     idProp x =
       if x == ""
         then ""
@@ -140,7 +121,7 @@ baseElement =
   Element
     { id = ""
     , name = undefined
-    , postback = ""
+    , postback = Nothing
     , body = []
     , source = []
     , noBody = False
@@ -184,9 +165,10 @@ insertBottom target elem = do
 event =
   Event
     { eventTarget = ""
-    , eventPostback = ""
+    , eventPostback = Nothing
     , eventType = undefined
     , eventSource = []
     }
 
 click = event {eventType = "click"}
+

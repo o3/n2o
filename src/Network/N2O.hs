@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RecordWildCards      #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Network.N2O
   ( runServer
@@ -12,9 +11,9 @@ module Network.N2O
   , eval
   , b2t
   , t2b
-  , q
   , Handler
   , N2O
+  , N2OMessage(init, destroy)
   , State
   , GlobalState(..)
   , LocalState(..)
@@ -40,6 +39,11 @@ import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WS
 import           Network.Wai.Middleware.Static  (static)
 import qualified Network.WebSockets             as WS
+import           Prelude                        hiding (init)
+
+class N2OMessage t where
+  init :: t
+  destroy :: t
 
 --TODO: make it UUID or some random string
 type ClientId  = Int
@@ -48,8 +52,7 @@ data GlobalState = GlobalState
   , clients :: TVar (M.Map ClientId WS.Connection) -- global state
   }
 data LocalState = LocalState
-  { terms    :: TVar (M.Map BL.ByteString Term) -- local terms store
-  , clientId :: ClientId
+  { clientId :: ClientId
   }
 type State = (LocalState, GlobalState)
 type N2O = ReaderT State IO
@@ -62,10 +65,10 @@ instance (IsString a, Monoid a) => Monoid (N2O a) where
   mempty = return ""
   mappend = (<>)
 
-type Handler a = [Term] -> N2O a
+type Handler p a = p -> N2O a
 
 data Config = Config
-  { app :: Wai.Application
+  { app  :: Wai.Application
   , port :: Warp.Port
   }
 
@@ -77,7 +80,7 @@ notFound _ respond =
     [("Content-Type", "text/plain")]
     "404 - Not found"
 
-runServer :: Config -> Handler () -> IO ()
+runServer :: (B.Binary p, N2OMessage p) => Config -> Handler p () -> IO ()
 runServer Config {..} handle = do
   state <-
     atomically $ do
@@ -87,54 +90,43 @@ runServer Config {..} handle = do
   Warp.run port $
     WS.websocketsOr WS.defaultConnectionOptions (wsApp state handle) app
 
-wsApp :: GlobalState -> Handler () -> WS.ServerApp
+wsApp :: (B.Binary p, N2OMessage p) => GlobalState -> Handler p () -> WS.ServerApp
 wsApp globalState handle pending = do
   conn <- WS.acceptRequest pending
   clientId <- connectClient conn globalState
   localState <-
     atomically $ do
-      table <- newTVar M.empty
-      return $ LocalState table clientId
+      -- table <- newTVar M.empty
+      return $ LocalState clientId
   WS.forkPingThread conn 30
   runReaderT (listen conn handle) (localState, globalState)
 
 --TODO: handle messages asynchronously
-listen :: WS.Connection -> Handler () ->  N2O ()
+listen :: (B.Binary p, N2OMessage p) => WS.Connection -> Handler p () ->  N2O ()
 listen conn handle =
   do sid <- liftIO $ receiveN2O conn
      (LocalState {..}, stateRef) <- ask
      liftIO $ putStrLn $ "SID : " ++ show sid
   -- reload page after reconnect
      case sid of
-       NilTerm -> do
+       "" -> do
          send $ T.pack $ "transition.pid = '" ++ (show clientId) ++ "';"
        _ -> do
          send "window.top.location='';"
-     handle [AtomTerm "init"]
+     handle $ init
      forever $ do
        message <- liftIO $ receive conn
-       case message of
-         (AtomTerm "pickle":_:(BinaryTerm pickled):(ListTerm (_:rs)):[]) -> do
-           liftIO $
-             atomically $ do
-               t <- readTVar terms
-               let t' = loop rs t
-               writeTVar terms t'
-           handle [(depickle pickled)]
-         _ -> handle message
+       handle message
      `finally` do
     disconnectClient
-    handle [AtomTerm "disconnect"]
-  where
-    loop [] t                                     = t
-    loop (r@(TupleTerm [BytelistTerm k, v]):rs) t = M.insert k v $ loop rs t
+    handle destroy
 
-q :: BL.ByteString -> N2O (Maybe Term)
-q k = do
-  (LocalState {..},_) <- ask
-  liftIO $ atomically $ do
-    t <- readTVar terms
-    return $ M.lookup k t
+-- q :: BL.ByteString -> N2O (Maybe p)
+-- q k = do
+--   (LocalState {..},_) <- ask
+--   liftIO $ atomically $ do
+--     t <- readTVar terms
+--     return $ M.lookup k t
 
 receive conn = do
   let loop = receive conn
@@ -142,9 +134,9 @@ receive conn = do
   decoded <-
     case message of
       WS.Binary x ->
-        case B.decode x of
-          TupleTerm x -> return x
-          _           -> error "Protocol violation: expected tuple"
+        case B.decodeOrFail x of
+          Right (_, _, x) -> return x
+          _               -> error "Cannot decode message"
       WS.Text x _ -> do
         case x of "PING" -> WS.sendTextData conn ("PONG" :: T.Text)
         loop
@@ -157,10 +149,10 @@ receiveN2O connection = do
     WS.Text "" _ -> error "Protocol violation: got empty text"
     WS.Text s _ ->
       case C8.stripPrefix "N2O," s of
-        Just "" -> return NilTerm
+        Just "" -> return ""
         Just x -> do
           putStrLn $ show x
-          return $ BinaryTerm x
+          return x
         _ -> error "Protocol violation"
 
 broadcast :: T.Text -> N2O ()

@@ -1,5 +1,10 @@
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Main (main) where
 
@@ -14,7 +19,15 @@ import qualified Network.HTTP.Types         as Http
 import           Network.N2O
 import           Network.N2O.Nitro
 import qualified Network.Wai                as Wai
-import           Prelude                    hiding (id)
+import           Prelude                    hiding (id, init)
+import Data.Binary
+import GHC.Generics
+
+data App = Init | Destroy | Chat C8.ByteString deriving (Generic, Show)
+instance N2OMessage App where
+  init = Init
+  destroy = Destroy
+instance Binary App
 
 main :: IO ()
 main = do
@@ -22,9 +35,9 @@ main = do
   putStrLn $ "Main thread id: " +| show threadId |+ ""
   runServer defaultConfig handle
 
-handle :: Handler ()
+handle :: Handler App ()
 
-handle ["init"] = do
+handle Init = do
   threadId <- liftIO myThreadId
   (LocalState {..}, _) <- ask
   printIO $ "connected " +| show clientId |+ ", " +| show threadId |+ ""
@@ -42,7 +55,7 @@ handle ["init"] = do
       , renderEvent
           event
             { eventTarget = "btn"
-            , eventPostback = "chat"
+            , eventPostback = Nothing --getIndex $ Chat {}
             , eventSource = ["msg"]
             , eventType = "click"
             }
@@ -50,9 +63,9 @@ handle ["init"] = do
   liftIO $ print e
   send e
 
-handle ["chat"] = do
+handle (Chat x) = do
   (LocalState {..}, _) <- ask
-  Just (BytelistTerm x) <- q "msg"
+  -- Just (BytelistTerm x) <- q "msg"
   msg <-
     insertBottom
       "history"
@@ -60,12 +73,13 @@ handle ["chat"] = do
   broadcast msg
   send "qi('msg').value='';"
 
-handle ["disconnect"] = do
+handle Destroy = do
   (LocalState {..}, _) <- ask
   printIO $ "disconnected " ++ show clientId
 
-handle msg = do
-  printIO "Protocol violation"
-  (alert $ "Unknown message: " +| show msg |+ "") >>= send
+-- handle msg = do
+--   printIO "Protocol violation"
+--   (alert $ "Unknown message: " +| show msg |+ "") >>= send
 
 printIO x = liftIO $ putStrLn x
+
