@@ -5,7 +5,6 @@ module Main (main) where
 
 import           Control.Concurrent         (forkIO, myThreadId)
 import           Control.Monad.IO.Class     (liftIO)
-import           Control.Monad.Reader       (ask)
 import           Control.Monad              (forM_)
 import           Data.Binary                (Binary)
 import qualified Data.Text                  as T
@@ -37,4 +36,3 @@ handle (Chat x) = do
 handle JustForFun = alert "\\'hahaha!"
 
 handle _ = liftIO $ print "unknown message"
-
