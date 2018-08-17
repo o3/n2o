@@ -62,8 +62,6 @@ class N2OMessage t where
   default names :: (Generic t, Names' (Rep t)) => Proxy t -> [String]
   names _ = names' (Proxy :: Proxy (Rep t))
 
-
---TODO: make it UUID or some random string
 type ClientId  = Int
 data GlobalState = GlobalState
   { nextId  :: TVar ClientId -- counter
@@ -136,7 +134,6 @@ wsApp (globalState, wire) handle pending = do
   WS.forkPingThread conn 30
   runReaderT (listen conn handle) (localState, globalState, wire)
 
---TODO: handle messages asynchronously
 listen ::
      forall p. (B.Binary p, N2OMessage p)
   => WS.Connection
@@ -170,12 +167,6 @@ listen conn handle =
     disconnectClient
     handle destroy
 
--- q :: BL.ByteString -> N2O (Maybe p)
--- q k = do
---   (LocalState {..},_) <- ask
---   liftIO $ atomically $ do
---     t <- readTVar terms
---     return $ M.lookup k t
 receive :: (B.Binary p, N2OMessage p) => WS.Connection -> IO p
 receive conn = do
   let loop = receive conn
@@ -232,13 +223,6 @@ local :: N2O LocalState
 local = do
   (s,_,_) <- ask
   return s
-
---wire :: Action -> N2O ()
---wire action = do
---  Wire w <- wired
---  liftIO $ atomically $ do
---    x <- readTVar w
---    writeTVar w (x ++ [action])
 
 wired :: N2O Wire
 wired = do
