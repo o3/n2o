@@ -22,6 +22,7 @@ library
   exposed-modules:
                   Network.N2O
                 , Network.N2O.Nitro
+                , Network.N2O.Generic
   other-modules:
       Paths_n2o
   hs-source-dirs:
