@@ -18,4 +18,4 @@ instance (Names' f, Names' g) => Names' (f :+: g) where
   names' _ = (names' (Proxy @f) ++ (names' (Proxy @g)))
 instance (Constructor c) => Names' (C1 c f) where
   names' _ = [conName (undefined :: C1 c f g)]
- 
+

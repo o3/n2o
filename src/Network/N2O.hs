@@ -22,7 +22,8 @@ module Network.N2O
   , global
   , Handler
   , N2O
-  , N2OMessage(init, destroy)
+  , N2OMessage
+  , EventType(..)
   , State
   , GlobalState(..)
   , LocalState(..)
@@ -54,9 +55,12 @@ import           Network.Wai.Middleware.Static  (static)
 import qualified Network.WebSockets             as WS
 import           Prelude                        hiding (init)
 
+data EventType = Init | Destroy | Message deriving (Show, Eq, Enum)
+
+
 class N2OMessage t where
-  init :: t
-  destroy :: t
+--  init :: t
+--  destroy :: t
   names :: Proxy t -> [String]
 
   default names :: (Generic t, Names' (Rep t)) => Proxy t -> [String]
@@ -65,31 +69,31 @@ class N2OMessage t where
 type ClientId  = Int
 data GlobalState = GlobalState
   { nextId  :: TVar ClientId -- counter
-  , clients :: TVar (M.Map ClientId WS.Connection) -- global state
+  , clients :: TVar (M.Map ClientId WS.Connection) -- connected clients
   }
 data LocalState = LocalState
-  { clientId :: ClientId
+  { clientId      :: ClientId
+  , wiredActions  :: TVar [Action]
   }
-newtype Wire = Wire { wiredActions :: TVar [Action] }
-type State = (LocalState, GlobalState, Wire)
+type State = (LocalState, GlobalState)
 type N2O = ReaderT State IO
 instance Nitro N2O where
   wire action = do                
-    Wire w <- wired               
+    w <- wired               
     liftIO $ atomically $ do      
       x <- readTVar w             
       writeTVar w (x ++ [action]) 
   actions = do
-    Wire w <- wired
+    w <- wired
     liftIO $ atomically $ do
       x <- readTVar w
       return x
   clear = do
-    Wire w <- wired
+    w <- wired
     liftIO $ atomically $ do
       writeTVar w []
 
-type Handler p a = p -> N2O a
+type Handler p a = EventType -> Maybe p -> N2O a
 
 data Config = Config
   { app  :: Wai.Application
@@ -110,29 +114,28 @@ runServer ::
   -> Handler p ()
   -> IO ()
 runServer Config {..} handle = do
-  (state, wire) <-
+  state <-
     atomically $ do
       clients <- newTVar M.empty
       initialId <- newTVar 0
-      wire <- newTVar []
-      return $ (GlobalState initialId clients, Wire wire)
+      return $ (GlobalState initialId clients)
   Warp.run port $
-    WS.websocketsOr WS.defaultConnectionOptions (wsApp (state, wire) handle) app
+    WS.websocketsOr WS.defaultConnectionOptions (wsApp state handle) app
 
 wsApp ::
       forall p. (B.Binary p, N2OMessage p)
-   => (GlobalState, Wire)
+   => GlobalState
    -> Handler p ()
    -> WS.ServerApp
-wsApp (globalState, wire) handle pending = do
+wsApp globalState handle pending = do
   conn <- WS.acceptRequest pending
   clientId <- connectClient conn globalState
   localState <-
     atomically $ do
-      -- table <- newTVar M.empty
-      return $ LocalState clientId
+      a <- newTVar []
+      return $ LocalState clientId a
   WS.forkPingThread conn 30
-  runReaderT (listen conn handle) (localState, globalState, wire)
+  runReaderT (listen conn handle) (localState, globalState)
 
 listen ::
      forall p. (B.Binary p, N2OMessage p)
@@ -141,7 +144,7 @@ listen ::
   -> N2O ()
 listen conn handle =
   do sid <- liftIO $ receiveN2O conn
-     (LocalState {..}, stateRef, _) <- ask
+     (LocalState clientId _, stateRef) <- ask
      liftIO $ putStrLn $ "SID : " ++ show sid
      let names_ = names (Proxy :: Proxy p)
      liftIO $ print $ names_
@@ -157,15 +160,15 @@ listen conn handle =
            "];"
      liftIO $ print eventListAction
      send $ T.pack $ eventListAction
-     handle init
+     handle Init Nothing
      flush
      forever $ do
        message <- liftIO $ receive conn
-       handle message
+       handle Message $ Just message
        flush
      `finally` do
     disconnectClient
-    handle destroy
+    handle Destroy Nothing
 
 receive :: (B.Binary p, N2OMessage p) => WS.Connection -> IO p
 receive conn = do
@@ -216,22 +219,22 @@ send action = do
 
 global :: N2O GlobalState
 global = do
-  (_,g,_) <- ask
+  (_,g) <- ask
   return g
 
 local :: N2O LocalState
 local = do
-  (s,_,_) <- ask
+  (s,_) <- ask
   return s
 
-wired :: N2O Wire
+wired :: N2O (TVar [Action])
 wired = do
-  (_,_,w) <- ask
+  LocalState _ w <- local
   return w
 
 flush :: N2O ()
 flush = do
-  Wire w <- wired
+  w <- wired
   xs <- liftIO $ atomically $ do
     xs <- readTVar w
     writeTVar w []
@@ -249,7 +252,7 @@ eval x = B.encode $ TupleTerm [AtomTerm "io", showBERT $ t2b x, NilTerm]
 
 allClients :: N2O (M.Map ClientId WS.Connection)
 allClients = do
-  GlobalState {..} <- global
+  GlobalState _ clients <- global
   liftIO $ readTVarIO clients
 
 connectClient :: WS.Connection -> GlobalState -> IO ClientId
@@ -264,7 +267,7 @@ connectClient conn GlobalState {..} = do
 
 disconnectClient :: N2O ()
 disconnectClient = do
-  (LocalState {..}, GlobalState {..}, _) <- ask
+  (LocalState {..}, GlobalState {..}) <- ask
   liftIO $ atomically $ do
     oldClients <- readTVar clients
     let newClients = M.delete clientId oldClients
