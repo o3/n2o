@@ -6,7 +6,6 @@
 module Network.N2O.Spec.Proto where
 
 import Data.BERT
-import Control.Exception
 import Control.Monad
 
 -- | N2O protocol message
