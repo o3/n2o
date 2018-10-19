@@ -23,6 +23,7 @@ library
                   Network.N2O
                 , Network.N2O.Nitro
                 , Network.N2O.Generic
+                , Network.N2O.Spec.Proto
   other-modules:
       Paths_n2o
   hs-source-dirs:
@@ -45,6 +46,7 @@ library
                , base64-bytestring
                , safe-exceptions
                , fmt
+               , bert
   default-language: Haskell2010
 
 executable n2o-sample
