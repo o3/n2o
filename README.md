@@ -1,8 +1,3 @@
-# N2O web framework in haskell
+# N2O protocol server in Haskell
 
-1. Execute
-```
-stack build && stack exec n2o-sample
-```
-2. open http://localhost:3000/sample/client.html
-
+https://n2o.space
