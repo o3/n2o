@@ -30,17 +30,18 @@ main = do
         t2 `shouldBe` proto2
 
 proto1 = N2OProto
- { info = \msg req state ->
-     case msg of
-       p1@(AtomTerm "proto1") -> return (reply, p1, req, state)
-       _ -> return (unknown, msg, req, state)
+  { protoInfo = \msg req state ->
+      case msg of
+        p1@(AtomTerm "proto1") -> return (reply, p1, req, state)
+        _ -> return (unknown, msg, req, state)
+  , protoInit = undefined
   }
 proto2 = N2OProto
-  { info = \msg req state ->
+  { protoInfo = \msg req state ->
      case msg of
        p2@(AtomTerm "proto2") -> return (reply, p2, req, state)
        _ -> return (unknown, msg, req, state)
-
+  , protoInit = undefined
   }
 
 protos = [proto1, proto2]

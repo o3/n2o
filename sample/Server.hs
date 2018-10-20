@@ -1,36 +1,26 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main (main) where
 
-import           Control.Concurrent         (forkIO, myThreadId)
-import           Control.Monad.IO.Class     (liftIO)
-import           Control.Monad              (forM_)
-import           Data.Binary                (Binary)
-import           Data.Text                  (Text)
-import           Fmt                        ((|+),(+|))
-import           GHC.Generics               (Generic)
-import           Network.N2O
-import           Network.N2O.Nitro
-import           Prelude                    (($), show, print, Maybe(Just))
+import Network.N2O
+import Data.BERT
+import Prelude (undefined, print, return)
 
-data App = Chat Text | JustForFun deriving (Generic)
-instance N2OMessage App
-instance Binary App
+main = runServer
+  "localhost"
+  3000
+  defaultCx{cxProtos = [proto1], cxHandlers = [router] }
 
-main = runServer defaultConfig handle
+router :: N2OCx -> N2OCx
+router cx@N2OCx{..} = cx{cxEvHnd = index}
 
-handle Init _ = do
-  insertBottom "app" panel{body=[textbox{id="msg"}
-                                ,button{id="btn",body=[Text "Chat"],postback="Chat",source=["msg"]}
-                                ,button{id="fun",body=[Text "Have fun"],postback="JustForFun"}
-                                ]}
+index :: N2OEvHnd
+index = N2OEvHnd
+  { event = \ev -> do {print ev; return NilTerm} -- Just print an event
+  }
 
-handle Message (Just (Chat x)) = do
-  threadId <- liftIO $ myThreadId
-  insertBottom "app" panel{body=[text ("" +| show threadId |+ ": " +| x |+ ""), br]}
-  broadcast
-
-handle Message (Just JustForFun) = alert "hahaha!"
-
-handle _ _ = liftIO $ print "unknown message"
+proto1 :: N2OProto
+proto1 = N2OProto
+  { protoInit = return ()
+  , protoInfo = \term _ cx@N2OCx{..} -> do {rep <- (event cxEvHnd) term; return (reply, rep, cxReq, cx)} -- Just delegate to the event handler
+  }

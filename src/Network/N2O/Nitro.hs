@@ -3,6 +3,7 @@
 
 module Network.N2O.Nitro where
 
+{-
 import qualified Data.ByteString             as BS
 import           Data.ByteString.Base64.Lazy (decode, encode)
 import qualified Data.ByteString.Lazy        as BL
@@ -157,4 +158,5 @@ event =
     }
 
 click = event {eventType = "click"}
+-}
 
