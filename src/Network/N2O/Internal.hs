@@ -11,8 +11,9 @@ data N2OReq = N2OReq
 
 type N2OResp = (Term, Term, N2OReq, N2OCx)
 
+-- | Event handler
 class N2OHandler a where
-  init :: (MonadIO m) => a -> Term -> N2OReq -> N2OCx -> m N2OResp
+  event :: (MonadIO m) => a -> Term -> m N2OResp
   -- to be continued...
 
 data HandlerBox = forall h. (N2OHandler h) => HandlerBox h
