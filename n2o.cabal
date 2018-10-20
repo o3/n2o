@@ -23,8 +23,7 @@ library
                   Network.N2O
                 , Network.N2O.Nitro
                 , Network.N2O.Generic
-                , Network.N2O.Proto
-                , Network.N2O.Proto.Internal
+                , Network.N2O.Internal
   other-modules:
       Paths_n2o
   hs-source-dirs:
