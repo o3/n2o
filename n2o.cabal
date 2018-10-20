@@ -25,9 +25,6 @@ library
                 , Network.N2O.Generic
                 , Network.N2O.Proto
                 , Network.N2O.Proto.Internal
-                , Network.N2O.Proto.Client
-                , Network.N2O.Proto.Io
-                , Network.N2O.Format
   other-modules:
       Paths_n2o
   hs-source-dirs:
@@ -79,4 +76,6 @@ test-suite n2o-test
   build-depends:
                 base >=4.7 && < 5
               , n2o
+              , bert
+              , hspec
   default-language: Haskell2010
