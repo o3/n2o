@@ -29,14 +29,18 @@ main = do
       it "test2" $ do
         t2 `shouldBe` proto2
 
-data Proto1 = Proto1
-instance N2OProto Proto1 where
-  info _ p1@(AtomTerm "proto1") req state = return (reply, p1, req, state)
-  info _ msg req state = return (unknown, msg, req, state)
-data Proto2 = Proto2
-instance N2OProto Proto2 where
-  info _ p2@(AtomTerm "proto2") req state = return (reply, p2, req, state)
-  info _ msg req state = return (unknown, msg, req, state)
+proto1 = N2OProto
+ { info = \msg req state ->
+     case msg of
+       p1@(AtomTerm "proto1") -> return (reply, p1, req, state)
+       _ -> return (unknown, msg, req, state)
+  }
+proto2 = N2OProto
+  { info = \msg req state ->
+     case msg of
+       p2@(AtomTerm "proto2") -> return (reply, p2, req, state)
+       _ -> return (unknown, msg, req, state)
 
-protos :: [ProtoBox]
-protos = [ProtoBox Proto1, ProtoBox Proto2]
+  }
+
+protos = [proto1, proto2]
