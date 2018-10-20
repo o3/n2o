@@ -5,29 +5,29 @@ import Data.BERT
 import qualified Data.ByteString as BS
 import Prelude hiding (init)
 
-data N2OCx = N2OCx
-  { cxEvHnd :: N2OEvHnd -- erlang version uses first class modules for this
-  , cxProtos  :: [N2OProto] -- NOTE: erlang version does not have such field,
+data Cx = Cx
+  { cxEvHnd :: EvHnd -- erlang version uses first class modules for this
+  , cxProtos  :: [Proto] -- NOTE: erlang version does not have such field,
                             -- but it seems, that it can be placed here
-  , cxReq :: N2OReq
-  , cxHandlers :: [N2OCx -> N2OCx]
+  , cxReq :: Req
+  , cxHandlers :: [Cx -> Cx]
   }
-defaultCx = N2OCx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [] }
-data N2OReq = N2OReq
+defaultCx = Cx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [] }
+data Req = Req
   { reqPath :: BS.ByteString
   }
 
-type N2OResp = (Term, Term, N2OReq, N2OCx)
+type Resp = (Term, Term, Req, Cx)
 
 -- | Event handler
-data N2OEvHnd = N2OEvHnd
+data EvHnd = EvHnd
   { event :: Term -> IO Term
   }
   -- to be continued...
 
 -- | N2O protocol
-data N2OProto = N2OProto
-  { protoInfo :: Term -> N2OReq -> N2OCx -> IO N2OResp
+data Proto = Proto
+  { protoInfo :: Term -> Req -> Cx -> IO Resp
   , protoInit :: IO ()
   }
 
@@ -38,11 +38,11 @@ binary = AtomTerm "binary"
 init = AtomTerm "init"
 terminate = AtomTerm "terminate"
 
-runProto :: Term -> N2OReq -> N2OCx -> [N2OProto] -> IO N2OResp
-runProto = go []
+protoRun :: Term -> Req -> Cx -> [Proto] -> IO Resp
+protoRun = go []
   where
     nop req state = (reply, TupleTerm [binary, NilTerm], req, state)
-    go :: [N2OResp] -> Term -> N2OReq -> N2OCx -> [N2OProto] -> IO N2OResp
+    go :: [Resp] -> Term -> Req -> Cx -> [Proto] -> IO Resp
     go _ _ req state [] = return $ nop req state
     go acc msg req state (proto:protos) = do
         res <- protoInfo proto msg req state

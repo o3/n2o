@@ -18,20 +18,20 @@ import           Prelude                        hiding (init)
 import Network.N2O.Internal
 
 type ClientId  = Int
-type N2O = ReaderT N2OCx IO
+type N2O = ReaderT Cx IO
 
 runServer ::
      String -- ^ address
   -> Int    -- ^ port
-  -> N2OCx  -- ^ n2o context
+  -> Cx  -- ^ n2o context
   -> IO ()
 runServer addr port cx = do
   WS.runServer addr port $ wsApp $ cx
 
-wsApp :: N2OCx -> WS.ServerApp
+wsApp :: Cx -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
-      cx1 = cx{cxReq = N2OReq {reqPath = path}}
+      cx1 = cx{cxReq = Req {reqPath = path}}
       handlers = cxHandlers cx1
       applyHandlers = \hs ctx ->
         case hs of
@@ -46,7 +46,7 @@ listen ::
      WS.Connection
   -> N2O ()
 listen conn =
-  do cx@N2OCx{..} <- ask
+  do cx@Cx{..} <- ask
      pid <- liftIO $ receiveN2O conn cx
      forever $ do
        message <- liftIO $ WS.receiveDataMessage conn
@@ -57,11 +57,11 @@ listen conn =
              case B.decodeOrFail bs of
                Left _ -> error "Cannot decode binary term"
                Right (_, _, term) -> return term
-       reply <- liftIO $ runProto decoded cxReq undefined cxProtos
+       reply <- liftIO $ protoRun decoded cxReq undefined cxProtos
        process conn reply
      `finally` do
-    N2OCx{..} <- ask
-    liftIO $ runProto (TupleTerm [terminate, NilTerm]) cxReq undefined cxProtos
+    Cx{..} <- ask
+    liftIO $ protoRun (TupleTerm [terminate, NilTerm]) cxReq undefined cxProtos
     return ()
 
 process conn reply =
@@ -69,7 +69,7 @@ process conn reply =
    (AtomTerm "reply", term, _, state) -> liftIO $ WS.sendBinaryData conn $ B.encode term
    _ -> error "Unknown response type"
 
-receiveN2O conn N2OCx{..} = do
+receiveN2O conn Cx{..} = do
   message <- WS.receiveDataMessage conn
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
@@ -77,7 +77,7 @@ receiveN2O conn N2OCx{..} = do
     WS.Text _ (Just s) ->
       case T.stripPrefix "N2O," s of
         Just pid -> do
-          reply <- runProto (TupleTerm [init, NilTerm]) cxReq undefined cxProtos
+          reply <- protoRun (TupleTerm [init, NilTerm]) cxReq undefined cxProtos
           process conn reply
           return pid
         _ -> error "Protocol violation"
