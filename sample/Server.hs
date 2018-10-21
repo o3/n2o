@@ -22,5 +22,6 @@ index = EvHnd
 proto1 :: Proto
 proto1 = Proto
   { protoInit = return ()
-  , protoInfo = \term _ cx@Cx{..} -> do {rep <- (event cxEvHnd) term; return (reply, rep, cxReq, cx)} -- Just delegate to the event handler
+  -- pass message to the event handler as is and replay with result
+  , protoInfo = \term cx@Cx{..} -> do {rep <- (event cxEvHnd) term; return (reply, rep, cx)}
   }

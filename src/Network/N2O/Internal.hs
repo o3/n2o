@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ExistentialQuantification, RecordWildCards #-}
 module Network.N2O.Internal where
 
 import Data.BERT
@@ -17,7 +17,7 @@ data Req = Req
   { reqPath :: BS.ByteString
   }
 
-type Resp = (Term, Term, Req, Cx)
+type Resp = (Term, Term, Cx)
 
 -- | Event handler
 data EvHnd = EvHnd
@@ -27,7 +27,7 @@ data EvHnd = EvHnd
 
 -- | N2O protocol
 data Proto = Proto
-  { protoInfo :: Term -> Req -> Cx -> IO Resp
+  { protoInfo :: Term -> Cx -> IO Resp
   , protoInit :: IO ()
   }
 
@@ -38,15 +38,15 @@ binary = AtomTerm "binary"
 init = AtomTerm "init"
 terminate = AtomTerm "terminate"
 
-protoRun :: Term -> Req -> Cx -> [Proto] -> IO Resp
-protoRun = go []
+protoRun :: Term -> Cx -> IO Resp
+protoRun msg cx@Cx{..} = go [] msg cx cxProtos
   where
-    nop req state = (reply, TupleTerm [binary, NilTerm], req, state)
-    go :: [Resp] -> Term -> Req -> Cx -> [Proto] -> IO Resp
-    go _ _ req state [] = return $ nop req state
-    go acc msg req state (proto:protos) = do
-        res <- protoInfo proto msg req state
+    nop state = (reply, TupleTerm [binary, NilTerm], state)
+    go :: [Resp] -> Term -> Cx  -> [Proto] -> IO Resp
+    go _ _ state [] = return $ nop state
+    go acc msg state (proto:protos) = do
+        res <- protoInfo proto msg state
         case res of
-            (AtomTerm "unknown", _, _, _) -> go acc msg req state protos
-            (AtomTerm "reply", msg1, req1, state1) -> return $ (reply, msg1, req1, state1)
-            a -> go (a:acc) msg req state protos
+            (AtomTerm "unknown", _, _) -> go acc msg state protos
+            (AtomTerm "reply", msg1, state1) -> return $ (reply, msg1, state1)
+            a -> go (a:acc) msg state protos
