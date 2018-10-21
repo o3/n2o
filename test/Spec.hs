@@ -36,14 +36,14 @@ proto1 = Proto
       case msg of
         p1@(AtomTerm "proto1") -> return (reply, p1, state)
         _ -> return (unknown, msg, state)
-  , protoInit = undefined
+  , protoInit = return ()
   }
 proto2 = Proto
   { protoInfo = \msg state ->
      case msg of
        p2@(AtomTerm "proto2") -> return (reply, p2, state)
        _ -> return (unknown, msg, state)
-  , protoInit = undefined
+  , protoInit = return ()
   }
 
 protos = [proto1, proto2]

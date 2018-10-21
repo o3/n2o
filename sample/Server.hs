@@ -16,12 +16,12 @@ router cx@Cx{..} = cx{cxEvHnd = index}
 
 index :: EvHnd
 index = EvHnd
-  { event = \ev -> do {print ev; return NilTerm} -- Just print an event
+  { event = \ev -> do {print ev; return NilTerm} -- print an event and reply with empty response
   }
 
 proto1 :: Proto
 proto1 = Proto
   { protoInit = return ()
-  -- pass message to the event handler as is and replay with result
+  -- pass message to the event handler as is and reply with result
   , protoInfo = \term cx@Cx{..} -> do {rep <- (event cxEvHnd) term; return (reply, rep, cx)}
   }
