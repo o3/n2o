@@ -11,6 +11,7 @@ router :: Cx -> Cx
 router cx = cx{ cxEvHnd = EvHnd { event = handle } } -- we have single (index) page only
 
 -- | Here's our event handler
+handle :: Term -> IO Term
 
 handle ["init", _] = do
   return $ BytelistTerm "qi('system').innerText='What is your name?'"
@@ -27,7 +28,7 @@ handle ev = do
 proto1 :: Proto
 proto1 = Proto
   { protoInit = return ()
-  , protoInfo = \term cx@Cx{cxEvHnd=cxEvHnd} -> do
-      rep <- (event cxEvHnd) term
+  , protoInfo = \term cx -> do
+      rep <- (event (cxEvHnd cx)) term
       return ("reply", ["io", rep, []], cx) -- reply with IO message
   }

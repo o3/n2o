@@ -60,7 +60,7 @@ executable n2o-sample-server
               , text
               , websockets
   default-language: Haskell2010
-  default-extensions: TypeFamilies, FlexibleContexts, OverloadedLists, OverloadedStrings, RecordWildCards
+  default-extensions: TypeFamilies, OverloadedLists, OverloadedStrings
 
 test-suite n2o-test
   type: exitcode-stdio-1.0
