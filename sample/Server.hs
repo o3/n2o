@@ -34,7 +34,7 @@ handle ["init", _] = do
   return $ BytelistTerm "qi('system').innerHTML='What is your name?'"
 
 handle ["client", ["greet", BytelistTerm name]] = do
-    return $ BytelistTerm ("qi('system').innerHTML='Hello, " <> (jsEscape name) <> "!'")
+    return $ BytelistTerm ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'")
 
 handle ev = do
   print (["client", ["greet", BytelistTerm "foo"]]::Term)
