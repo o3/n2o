@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, RecordWildCards #-}
+{-# LANGUAGE ExistentialQuantification, RecordWildCards, TypeFamilies #-}
 module Network.N2O.Internal where
 
 import Data.BERT
@@ -7,6 +7,19 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import Prelude hiding (init)
 import Network.Socket (Socket)
+import Data.String (IsString, fromString)
+import GHC.Exts (IsList, Item, fromList, toList)
+
+instance IsString Term where
+  fromString atom = AtomTerm atom
+
+instance IsList Term where
+  type Item Term = Term
+  fromList [] = NilTerm
+  fromList terms = TupleTerm terms
+  toList (TupleTerm terms) = terms
+  toList (ListTerm terms) = terms
+  toList NilTerm = []
 
 data Cx = Cx
   { cxEvHnd :: EvHnd -- erlang version uses first class modules for this

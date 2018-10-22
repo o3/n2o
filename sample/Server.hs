@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards, OverloadedStrings #-}
 module Main (main) where
 
 import Network.N2O
@@ -31,15 +30,16 @@ index = EvHnd { event = handle }
 
 -- | Here's our event handler
 
-handle (TupleTerm [AtomTerm "init",_]) = do
+handle ["init", _] = do
   return $ BytelistTerm "qi('system').innerHTML='What is your name?'"
 
-handle (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm name]]) = do
+handle ["client", ["greet", BytelistTerm name]] = do
     return $ BytelistTerm ("qi('system').innerHTML='Hello, " <> (jsEscape name) <> "!'")
 
 handle ev = do
+  print (["client", ["greet", BytelistTerm "foo"]]::Term)
   print ev -- print event and reply with empty string
-  return NilTerm
+  return []
 
 -- | -----------------------------
 
@@ -48,5 +48,5 @@ proto1 = Proto
   { protoInit = return ()
   , protoInfo = \term cx@Cx{cxEvHnd=cxEvHnd} -> do
       rep <- (event cxEvHnd) term
-      return (reply, TupleTerm [AtomTerm "io", rep, NilTerm], cx) -- reply with IO message
+      return (reply, ["io", rep, []], cx) -- reply with IO message
   }
