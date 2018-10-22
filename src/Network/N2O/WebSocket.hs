@@ -7,7 +7,6 @@ module Network.N2O.WebSocket
 
 import           Control.Exception              (catch, finally)
 import           Control.Monad                  (forM_, forever, mapM_)
-import           Control.Monad.IO.Class         (liftIO)
 import           Data.BERT
 import qualified Data.Binary                    as B
 import           Data.CaseInsensitive           (mk)
@@ -61,9 +60,9 @@ listen ::
   -> Cx
   -> IO ()
 listen conn cx =
-  do pid <- liftIO $ receiveN2O conn cx
+  do pid <- receiveN2O conn cx
      forever $ do
-       message <- liftIO $ WS.receiveDataMessage conn
+       message <- WS.receiveDataMessage conn
        decoded <-
          case message of -- NOTE: using BERT only. TODO: encode/decode
            WS.Text t _ -> return $ BytelistTerm t
@@ -72,16 +71,16 @@ listen conn cx =
                Left _ -> error "Cannot decode binary term"
                Right (_, _, term) -> return term
        case decoded of
-         BytelistTerm "PING" -> liftIO $ WS.sendTextData conn ("PONG"::T.Text)
-         _ -> do reply <- liftIO $ protoRun decoded cx
+         BytelistTerm "PING" -> WS.sendTextData conn ("PONG"::T.Text)
+         _ -> do reply <- protoRun decoded cx
                  process conn reply
      `finally` do
-    liftIO $ protoRun ["terminate", []] cx
+    protoRun ["terminate", []] cx
     return ()
 
 process conn reply =
   case reply of
-   ("reply", term, state) -> liftIO $ WS.sendBinaryData conn $ B.encode term
+   ("reply", term, state) -> WS.sendBinaryData conn $ B.encode term
    _ -> error "Unknown response type"
 
 receiveN2O conn cx = do
