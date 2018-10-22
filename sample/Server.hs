@@ -19,7 +19,6 @@ handle ["client", ["greet", BytelistTerm name]] = do
     return $ BytelistTerm ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'")
 
 handle ev = do
-  print (["client", ["greet", BytelistTerm "foo"]]::Term)
   print ev -- print event and reply with empty string
   return []
 
