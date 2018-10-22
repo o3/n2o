@@ -29,6 +29,8 @@ router cx@Cx{..} = cx{cxEvHnd = index} -- we have single (index) page only
 index :: EvHnd
 index = EvHnd { event = handle }
 
+-- | Here's our event handler
+
 handle (TupleTerm [AtomTerm "init",_]) = do
   return $ BytelistTerm "qi('system').innerHTML='What is your name?'"
 
@@ -38,6 +40,8 @@ handle (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm 
 handle ev = do
   print ev -- print event and reply with empty string
   return NilTerm -- $ BytelistTerm $
+
+-- | -----------------------------
 
 proto1 :: Proto
 proto1 = Proto
