@@ -3,8 +3,6 @@ module Network.N2O.Internal where
 
 import Data.BERT
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
-import Prelude hiding (init)
 import Network.Socket (Socket)
 import Data.String (IsString, fromString)
 import GHC.Exts (IsList, Item, fromList, toList)
