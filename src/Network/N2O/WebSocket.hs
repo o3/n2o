@@ -90,7 +90,6 @@ process conn reply =
 
 receiveN2O conn cx = do
   message <- WS.receiveDataMessage conn
-  print message
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"
