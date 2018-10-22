@@ -1,10 +1,9 @@
-{-# LANGUAGE ExistentialQuantification, RecordWildCards, TypeFamilies #-}
+{-# LANGUAGE ExistentialQuantification, OverloadedStrings #-}
 module Network.N2O.Internal where
 
 import Data.BERT
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Char8 as C8
 import Prelude hiding (init)
 import Network.Socket (Socket)
 import Data.String (IsString, fromString)
@@ -38,7 +37,7 @@ data Req = Req
   , reqSock :: Socket
   }
 
-mkReq = Req { reqPath = C8.pack "/", reqMeth = C8.pack "GET", reqVers = C8.pack "HTTP/1.1", reqHead = [], reqSock = undefined }
+mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [], reqSock = undefined }
 
 data Resp = Resp
   { respCode :: Int
@@ -62,22 +61,16 @@ data Proto = Proto
   , protoInit :: IO ()
   }
 
-unknown, reply, binary, init, terminate :: Term
-unknown = AtomTerm "unknown"
-reply = AtomTerm "reply"
-binary = AtomTerm "binary"
-init = AtomTerm "init"
-terminate = AtomTerm "terminate"
-
 protoRun :: Term -> Cx -> IO Reply
 protoRun msg cx = go [] msg cx (cxProtos cx)
   where
-    nop state = (reply, TupleTerm [binary, NilTerm], state)
+    nop :: Cx -> Reply
+    nop state = ("reply", ["binary", []], state)
     go :: [Reply] -> Term -> Cx  -> [Proto] -> IO Reply
     go _ _ state [] = return $ nop state
     go acc msg state (proto:protos) = do
         res <- protoInfo proto msg state
         case res of
-            (AtomTerm "unknown", _, _) -> go acc msg state protos
-            (AtomTerm "reply", msg1, state1) -> return $ (reply, msg1, state1)
+            ("unknown", _, _) -> go acc msg state protos
+            ("reply", msg1, state1) -> return $ ("reply", msg1, state1)
             a -> go (a:acc) msg state protos

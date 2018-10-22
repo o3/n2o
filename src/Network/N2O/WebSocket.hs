@@ -76,12 +76,12 @@ listen conn cx =
          _ -> do reply <- liftIO $ protoRun decoded cx
                  process conn reply
      `finally` do
-    liftIO $ protoRun (TupleTerm [terminate, NilTerm]) cx
+    liftIO $ protoRun ["terminate", []] cx
     return ()
 
 process conn reply =
   case reply of
-   (AtomTerm "reply", term, state) -> liftIO $ WS.sendBinaryData conn $ B.encode term
+   ("reply", term, state) -> liftIO $ WS.sendBinaryData conn $ B.encode term
    _ -> error "Unknown response type"
 
 receiveN2O conn cx = do
@@ -92,7 +92,7 @@ receiveN2O conn cx = do
     WS.Text bs _ ->
       case T.stripPrefix "N2O," (decodeUtf8 bs) of
         Just pid -> do
-          reply <- protoRun (TupleTerm [init, NilTerm]) cx
+          reply <- protoRun ["init", []] cx
           process conn reply
           return pid
         _ -> error "Protocol violation"

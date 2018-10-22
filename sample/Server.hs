@@ -29,5 +29,5 @@ proto1 = Proto
   { protoInit = return ()
   , protoInfo = \term cx@Cx{cxEvHnd=cxEvHnd} -> do
       rep <- (event cxEvHnd) term
-      return (reply, ["io", rep, []], cx) -- reply with IO message
+      return ("reply", ["io", rep, []], cx) -- reply with IO message
   }
