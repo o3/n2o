@@ -15,7 +15,7 @@ handler req respond
   | needUpgrade req = do
       -- make pending ws request
       pending <- mkPending WS.defaultConnectionOptions req
-      let cx = defaultCx {cxReq = req, cxEvHnd = index, cxHandlers = [router], cxProtos = [proto1]}
+      let cx = defaultCx {cxReq = req, cxHandlers = [router], cxProtos = [proto1]}
       -- n2o stream app
       wsApp cx pending
   | True = fileResp (preparePath $ unpack $ reqPath req) respond
@@ -24,7 +24,7 @@ handler req respond
     preparePath path = path
 
 router :: Cx -> Cx
-router cx@Cx{..} = cx{cxEvHnd = index} -- we have single (index) page only
+router cx = cx{cxEvHnd = index} -- we have single (index) page only
 
 index :: EvHnd
 index = EvHnd { event = handle }
@@ -46,7 +46,7 @@ handle ev = do
 proto1 :: Proto
 proto1 = Proto
   { protoInit = return ()
-  , protoInfo = \term cx@Cx{..} -> do
+  , protoInfo = \term cx@Cx{cxEvHnd=cxEvHnd} -> do
       rep <- (event cxEvHnd) term
       return (reply, TupleTerm [AtomTerm "io", rep, NilTerm], cx) -- reply with IO message
   }

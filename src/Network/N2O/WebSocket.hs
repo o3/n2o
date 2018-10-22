@@ -5,10 +5,9 @@ module Network.N2O.WebSocket
   , mkPending
   ) where
 
-import           Control.Exception.Safe         (catch, finally)
+import           Control.Exception              (catch, finally)
 import           Control.Monad                  (forM_, forever, mapM_)
 import           Control.Monad.IO.Class         (liftIO)
-import           Control.Monad.Reader           (ReaderT, ask, runReaderT)
 import           Data.BERT
 import qualified Data.Binary                    as B
 import           Data.CaseInsensitive           (mk)
@@ -21,10 +20,8 @@ import qualified Network.WebSockets             as WS
 import qualified Network.WebSockets.Connection  as WSConn
 import qualified Network.WebSockets.Stream      as WSStream
 import           Prelude                        hiding (init)
-import Debug.Trace
 
 type ClientId  = Int
-type N2O = ReaderT Cx IO
 
 {- | N2O endpoint to the web sockets. Can be integrated with the @websockets@ library
 
@@ -42,7 +39,7 @@ wsApp cx pending = do
       cx2 = applyHandlers handlers cx1
   conn <- WS.acceptRequest pending
   WS.forkPingThread conn 30
-  runReaderT (listen conn) cx
+  listen conn cx2
 
 -- | Make pending WS request
 mkPending :: WS.ConnectionOptions -> Req -> IO WS.PendingConnection
@@ -61,10 +58,10 @@ mkPending opts req = do
 
 listen ::
      WS.Connection
-  -> N2O ()
-listen conn =
-  do cx@Cx{..} <- ask
-     pid <- liftIO $ receiveN2O conn cx
+  -> Cx
+  -> IO ()
+listen conn cx =
+  do pid <- liftIO $ receiveN2O conn cx
      forever $ do
        message <- liftIO $ WS.receiveDataMessage conn
        decoded <-
@@ -79,7 +76,6 @@ listen conn =
          _ -> do reply <- liftIO $ protoRun decoded cx
                  process conn reply
      `finally` do
-    cx <- ask
     liftIO $ protoRun (TupleTerm [terminate, NilTerm]) cx
     return ()
 

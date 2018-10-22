@@ -57,7 +57,7 @@ init = AtomTerm "init"
 terminate = AtomTerm "terminate"
 
 protoRun :: Term -> Cx -> IO Reply
-protoRun msg cx@Cx{..} = go [] msg cx cxProtos
+protoRun msg cx = go [] msg cx (cxProtos cx)
   where
     nop state = (reply, TupleTerm [binary, NilTerm], state)
     go :: [Reply] -> Term -> Cx  -> [Proto] -> IO Reply
