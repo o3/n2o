@@ -74,8 +74,10 @@ listen conn =
              case B.decodeOrFail bs of
                Left _ -> error "Cannot decode binary term"
                Right (_, _, term) -> return term
-       reply <- liftIO $ protoRun decoded cx
-       process conn reply
+       case decoded of
+         BytelistTerm "PING" -> liftIO $ WS.sendTextData conn ("PONG"::T.Text)
+         _ -> do reply <- liftIO $ protoRun decoded cx
+                 process conn reply
      `finally` do
     cx <- ask
     liftIO $ protoRun (TupleTerm [terminate, NilTerm]) cx
