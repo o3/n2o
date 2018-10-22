@@ -3,7 +3,6 @@
 
 module Network.N2O.Nitro where
 
-{-
 import qualified Data.ByteString             as BS
 import           Data.ByteString.Base64.Lazy (decode, encode)
 import qualified Data.ByteString.Lazy        as BL
@@ -45,20 +44,6 @@ class (MonadIO m) => Nitro m where
   actions :: m [Action] -- get actions
   clear :: m () -- clear actions
 
--- pickle :: Term -> String
--- pickle =  C8.unpack . encode . Bin.encode
-
--- depickle :: BL.ByteString -> Term
--- depickle b = case decode b of
---   Left e   -> error e
---   Right bs -> Bin.decode bs
-
--- Erlang N2O polymorphism of render function:
--- each record has 'module' field - it is the dispatch value
--- nitro:render/1 - this is interface
--- wf_render:render/1 - dispatcher function
--- action_event:render_action/1 - implementation for events
--- format: {pickle,target,event,_,{name1,val1},{name2,val2}...}
 renderEvent :: (Monad m) => Event -> m Action
 renderEvent Event {..} =
       case eventPostback of
@@ -158,5 +143,4 @@ event =
     }
 
 click = event {eventType = "click"}
--}
 

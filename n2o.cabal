@@ -40,6 +40,8 @@ library
                , attoparsec
                , case-insensitive
                , containers
+               , fmt
+               , base64-bytestring
   default-language: Haskell2010
 
 executable n2o-sample-server
