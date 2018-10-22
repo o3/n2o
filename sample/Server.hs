@@ -39,7 +39,7 @@ handle (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm 
 
 handle ev = do
   print ev -- print event and reply with empty string
-  return NilTerm -- $ BytelistTerm $
+  return NilTerm
 
 -- | -----------------------------
 
