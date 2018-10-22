@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards
            , OverloadedStrings #-}
 module Network.N2O.WebSocket
-  ( runServer
+  ( wsApp
+  , mkPending
   ) where
 
 import           Control.Exception.Safe         (catch, finally)
@@ -10,28 +11,29 @@ import           Control.Monad.IO.Class         (liftIO)
 import           Control.Monad.Reader           (ReaderT, ask, runReaderT)
 import           Data.BERT
 import qualified Data.Binary                    as B
+import           Data.CaseInsensitive           (mk)
 import qualified Data.ByteString.Lazy           as BL
 import qualified Data.Text.Lazy                 as T
 import           Data.Text.Lazy.Encoding
+import           Network.N2O.Internal
+import           Network.Socket                 (Socket)
 import qualified Network.WebSockets             as WS
+import qualified Network.WebSockets.Connection  as WSConn
+import qualified Network.WebSockets.Stream      as WSStream
 import           Prelude                        hiding (init)
-import Network.N2O.Internal
+import Debug.Trace
 
 type ClientId  = Int
 type N2O = ReaderT Cx IO
 
-runServer ::
-     String -- ^ address
-  -> Int    -- ^ port
-  -> Cx  -- ^ n2o context
-  -> IO ()
-runServer addr port cx = do
-  WS.runServer addr port $ wsApp $ cx
+{- | N2O endpoint to the web sockets. Can be integrated with the @websockets@ library
 
+i.e. WS.runServer addr port $ wsApp cx
+-}
 wsApp :: Cx -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
-      cx1 = cx{cxReq = Req {reqPath = path}}
+      cx1 = cx{cxReq = mkReq {reqPath = path}}
       handlers = cxHandlers cx1
       applyHandlers = \hs ctx ->
         case hs of
@@ -41,6 +43,21 @@ wsApp cx pending = do
   conn <- WS.acceptRequest pending
   WS.forkPingThread conn 30
   runReaderT (listen conn) cx
+
+-- | Make pending WS request
+mkPending :: WS.ConnectionOptions -> Req -> IO WS.PendingConnection
+mkPending opts req = do
+  stream <- WSStream.makeSocketStream (reqSock req)
+  let requestHead = WS.RequestHead
+                    { requestPath = reqPath req
+                    , requestSecure = False
+                    , requestHeaders = fmap (\(k,v) -> (mk k, v)) (reqHead req)}
+  return WSConn.PendingConnection
+    { pendingOptions = opts
+    , pendingRequest = requestHead
+    , pendingOnAccept = \_ -> return ()
+    , pendingStream = stream
+    }
 
 listen ::
      WS.Connection
@@ -71,11 +88,12 @@ process conn reply =
 
 receiveN2O conn cx = do
   message <- WS.receiveDataMessage conn
+  print message
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"
-    WS.Text _ (Just s) ->
-      case T.stripPrefix "N2O," s of
+    WS.Text bs _ ->
+      case T.stripPrefix "N2O," (decodeUtf8 bs) of
         Just pid -> do
           reply <- protoRun (TupleTerm [init, NilTerm]) cx
           process conn reply

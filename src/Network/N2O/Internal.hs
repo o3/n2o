@@ -3,7 +3,10 @@ module Network.N2O.Internal where
 
 import Data.BERT
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Char8 as C8
 import Prelude hiding (init)
+import Network.Socket (Socket)
 
 data Cx = Cx
   { cxEvHnd :: EvHnd -- erlang version uses first class modules for this
@@ -13,11 +16,26 @@ data Cx = Cx
   , cxHandlers :: [Cx -> Cx]
   }
 defaultCx = Cx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [] }
+type Header = (BS.ByteString, BS.ByteString)
 data Req = Req
   { reqPath :: BS.ByteString
+  , reqMeth :: BS.ByteString
+  , reqVers :: BS.ByteString
+  , reqHead :: [Header]
+  , reqSock :: Socket
   }
 
-type Resp = (Term, Term, Cx)
+mkReq = Req { reqPath = C8.pack "/", reqMeth = C8.pack "GET", reqVers = C8.pack "HTTP/1.1", reqHead = [], reqSock = undefined }
+
+data Resp = Resp
+  { respCode :: Int
+  , respHead :: [Header]
+  , respBody :: BS.ByteString
+  } deriving (Show)
+
+mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
+
+type Reply = (Term, Term, Cx)
 
 -- | Event handler
 data EvHnd = EvHnd
@@ -27,7 +45,7 @@ data EvHnd = EvHnd
 
 -- | N2O protocol
 data Proto = Proto
-  { protoInfo :: Term -> Cx -> IO Resp
+  { protoInfo :: Term -> Cx -> IO Reply
   , protoInit :: IO ()
   }
 
@@ -38,11 +56,11 @@ binary = AtomTerm "binary"
 init = AtomTerm "init"
 terminate = AtomTerm "terminate"
 
-protoRun :: Term -> Cx -> IO Resp
+protoRun :: Term -> Cx -> IO Reply
 protoRun msg cx@Cx{..} = go [] msg cx cxProtos
   where
     nop state = (reply, TupleTerm [binary, NilTerm], state)
-    go :: [Resp] -> Term -> Cx  -> [Proto] -> IO Resp
+    go :: [Reply] -> Term -> Cx  -> [Proto] -> IO Reply
     go _ _ state [] = return $ nop state
     go acc msg state (proto:protos) = do
         res <- protoInfo proto msg state
