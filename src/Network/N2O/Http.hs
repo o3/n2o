@@ -20,17 +20,22 @@ import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
 import Network.N2O.Internal
+import Network.N2O.WebSocket
 import Prelude hiding (takeWhile)
 import Data.Attoparsec.ByteString hiding (try)
 import Data.CaseInsensitive
+import qualified Network.WebSockets as WS
 
-data HttpConf = HttpConf { httpPort :: Int, httpHost :: String, httpHandler :: Req -> (Resp -> IO ()) -> IO ()}
-mkHttpConf = HttpConf { httpPort = 3000, httpHost = "0.0.0.0", httpHandler = undefined }
+data HttpConf = HttpConf { httpPort :: Int, httpHost :: String
+                         , httpHandler :: Req -> (Resp -> IO ()) -> IO ()
+                         , httpTempl :: String
+                         }
+mkHttpConf = HttpConf { httpPort = 3000, httpHost = "0.0.0.0", httpHandler = undefined, httpTempl = "templates/" }
 
-runServer :: HttpConf -> IO ()
-runServer conf@HttpConf{..} = withSocketsDo $ do
+runServer :: HttpConf -> Cx -> IO ()
+runServer conf@HttpConf{..} cx = withSocketsDo $ do
     addr <- resolve httpHost (show $ httpPort)
-    bracket (open addr) close (acceptConnections conf)
+    bracket (open addr) close (acceptConnections conf cx)
   where
     resolve host port = do
         let hints = defaultHints { addrSocketType = Stream, addrFlags = [AI_PASSIVE] }
@@ -43,25 +48,31 @@ runServer conf@HttpConf{..} = withSocketsDo $ do
         listen sock 10
         return sock
 
-acceptConnections :: HttpConf -> Socket -> IO ()
-acceptConnections conf sock = do
+acceptConnections :: HttpConf -> Cx -> Socket -> IO ()
+acceptConnections conf cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
-            (talk conf handle host_addr `finally` close handle)
+            (talk conf cx handle host_addr `finally` close handle)
             (\e@(SomeException _) -> print e))
-  acceptConnections conf sock
+  acceptConnections conf cx sock
 
-talk :: HttpConf -> Socket -> SockAddr -> IO ()
-talk conf sock addr = do
+talk :: HttpConf -> Cx -> Socket -> SockAddr -> IO ()
+talk conf cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
   case either of
     Left resp -> sendResp conf sock resp
     Right req -> do
-      httpHandler conf req{reqSock = sock} (sendResp conf sock)
---       if (isKeepAlive req)
---         then talk conf sock addr
---         else return ()
+      if needUpgrade req then do
+            -- make pending ws request
+            pending <- mkPending WS.defaultConnectionOptions req{reqSock = sock}
+            -- n2o stream app
+            wsApp cx{cxReq = req} pending
+         else do
+           fileResp (preparePath $ C.unpack $ reqPath req) (sendResp conf sock)
+  where
+    preparePath ('/':path) = path
+    preparePath path = path
 
 status = \case
   200 -> "OK"
