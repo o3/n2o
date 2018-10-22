@@ -2,6 +2,7 @@
 module Main (main) where
 
 import Network.N2O
+import Network.N2O.Util
 import Data.BERT
 import qualified Network.WebSockets as WS
 import Prelude hiding (init)
@@ -23,16 +24,25 @@ handler req respond
     preparePath path = path
 
 router :: Cx -> Cx
-router cx@Cx{..} = cx{cxEvHnd = index}
+router cx@Cx{..} = cx{cxEvHnd = index} -- we have single (index) page only
 
 index :: EvHnd
-index = EvHnd
-  { event = \ev -> do {print ev; return NilTerm} -- print an event and reply with empty response
-  }
+index = EvHnd { event = handle }
+
+handle (TupleTerm [AtomTerm "init",_]) = do
+  return $ BytelistTerm "qi('system').innerHTML='What is your name?'"
+
+handle (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm name]]) = do
+    return $ BytelistTerm ("qi('system').innerHTML='Hello, " <> (jsEscape name) <> "!'")
+
+handle ev = do
+  print ev -- print event and reply with empty string
+  return NilTerm -- $ BytelistTerm $
 
 proto1 :: Proto
 proto1 = Proto
   { protoInit = return ()
-  -- pass message to the event handler as is and reply with result
-  , protoInfo = \term cx@Cx{..} -> do {rep <- (event cxEvHnd) term; return (reply, rep, cx)}
+  , protoInfo = \term cx@Cx{..} -> do
+      rep <- (event cxEvHnd) term
+      return (reply, TupleTerm [AtomTerm "io", rep, NilTerm], cx) -- reply with IO message
   }

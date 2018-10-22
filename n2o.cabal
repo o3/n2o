@@ -25,6 +25,7 @@ library
                 , Network.N2O.Internal
                 , Network.N2O.Http
                 , Network.N2O.WebSocket
+                , Network.N2O.Util
   other-modules:
       Paths_n2o
   hs-source-dirs:
