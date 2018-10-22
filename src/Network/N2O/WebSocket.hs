@@ -1,9 +1,5 @@
-{-# LANGUAGE RecordWildCards
-           , OverloadedStrings #-}
-module Network.N2O.WebSocket
-  ( wsApp
-  , mkPending
-  ) where
+{-# LANGUAGE RecordWildCards , OverloadedStrings #-}
+module Network.N2O.WebSocket ( wsApp , mkPending ) where
 
 import           Control.Exception              (catch, finally)
 import           Control.Monad                  (forM_, forever, mapM_)
@@ -18,9 +14,6 @@ import           Network.Socket                 (Socket)
 import qualified Network.WebSockets             as WS
 import qualified Network.WebSockets.Connection  as WSConn
 import qualified Network.WebSockets.Stream      as WSStream
-import           Prelude                        hiding (init)
-
-type ClientId  = Int
 
 {- | N2O endpoint to the web sockets. Can be integrated with the @websockets@ library
 
@@ -55,10 +48,7 @@ mkPending opts req = do
     , pendingStream = stream
     }
 
-listen ::
-     WS.Connection
-  -> Cx
-  -> IO ()
+listen :: WS.Connection -> Cx -> IO ()
 listen conn cx =
   do pid <- receiveN2O conn cx
      forever $ do
