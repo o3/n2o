@@ -29,7 +29,7 @@ main = do
       it "test2" $ do
         t2 `shouldBe` proto2
 
-cx = defaultCx{cxProtos = protos}
+cx = mkCx{cxProtos = protos}
 
 proto1 = Proto
   { protoInfo = \msg state ->

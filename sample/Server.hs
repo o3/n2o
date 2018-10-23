@@ -5,7 +5,7 @@ import Network.N2O.Util
 import Data.BERT
 
 conf = mkHttpConf { httpPort = 3000, httpHost = "localhost" }
-main = runServer conf defaultCx { cxHandlers = [router], cxProtos = [proto1] }
+main = runServer conf mkCx { cxHandlers = [router], cxProtos = [proto1] }
 
 router :: Cx -> Cx
 router cx = cx{ cxEvHnd = event } -- we have single (index) page only

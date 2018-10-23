@@ -25,7 +25,7 @@ data Cx = Cx
   , cxReq :: Req
   , cxHandlers :: [Cx -> Cx]
   }
-defaultCx = Cx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [] }
+mkCx = Cx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [] }
 type Header = (BS.ByteString, BS.ByteString)
 data Req = Req
   { reqPath :: BS.ByteString
