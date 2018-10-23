@@ -77,3 +77,4 @@ test-suite n2o-test
               , bert
               , hspec
   default-language: Haskell2010
+  default-extensions: TypeFamilies, OverloadedLists, OverloadedStrings
