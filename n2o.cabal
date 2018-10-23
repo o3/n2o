@@ -42,6 +42,7 @@ library
                , containers
                , fmt
                , base64-bytestring
+               , stm
   default-language: Haskell2010
   default-extensions: RecordWildCards, TypeFamilies, OverloadedLists
 

@@ -19,9 +19,9 @@ instance IsList Term where
   toList NilTerm = []
 
 data Cx = Cx
-  { cxEvHnd :: EvHnd -- erlang version uses first class modules for this
-  , cxProtos  :: [Proto] -- NOTE: erlang version does not have such field,
-                            -- but it seems, that it can be placed here
+  { cxEvHnd :: Term -> IO Term -- ^ erlang version uses first class modules for this
+  , cxProtos  :: [Proto]       -- ^ NOTE: erlang version does not have such field,
+                               -- but it seems, that it can be placed here
   , cxReq :: Req
   , cxHandlers :: [Cx -> Cx]
   }
@@ -46,12 +46,6 @@ data Resp = Resp
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
 type Reply = (Term, Term, Cx)
-
--- | Event handler
-data EvHnd = EvHnd
-  { event :: Term -> IO Term
-  }
-  -- to be continued...
 
 -- | N2O protocol
 data Proto = Proto
