@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, OverloadedStrings #-}
+{-# LANGUAGE ExistentialQuantification, OverloadedStrings, TypeFamilies, OverloadedLists #-}
 module Network.N2O.Internal where
 
 import Data.BERT

@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards , OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings, OverloadedLists #-}
 module Network.N2O.WebSocket ( wsApp , mkPending ) where
 
 import           Control.Exception              (catch, finally)
@@ -15,10 +15,6 @@ import qualified Network.WebSockets             as WS
 import qualified Network.WebSockets.Connection  as WSConn
 import qualified Network.WebSockets.Stream      as WSStream
 
-{- | N2O endpoint to the web sockets. Can be integrated with the @websockets@ library
-
-i.e. WS.runServer addr port $ wsApp cx
--}
 wsApp :: Cx -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
