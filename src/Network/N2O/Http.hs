@@ -3,15 +3,7 @@
 TODO:
 * graceful exit
 -}
-module Network.N2O.Http
-  ( HttpConf
-  , mkHttpConf
-  , httpPort, httpHost, httpHandler
-  , runServer
-  , needUpgrade
-  , getHeader
-  , fileResp
-  ) where
+module Network.N2O.Http ( runServer ) where
 
 import Control.Concurrent
 import Control.Exception (catch, finally, SomeException(..), bracket, try)
@@ -26,16 +18,12 @@ import Data.Attoparsec.ByteString hiding (try)
 import Data.CaseInsensitive
 import qualified Network.WebSockets as WS
 
-data HttpConf = HttpConf { httpPort :: Int, httpHost :: String
-                         , httpHandler :: Req -> (Resp -> IO ()) -> IO ()
-                         , httpTempl :: String
-                         }
-mkHttpConf = HttpConf { httpPort = 3000, httpHost = "0.0.0.0", httpHandler = undefined, httpTempl = "templates/" }
+data HttpConf = HttpConf
 
-runServer :: HttpConf -> Cx -> IO ()
-runServer conf@HttpConf{..} cx = withSocketsDo $ do
-    addr <- resolve httpHost (show $ httpPort)
-    bracket (open addr) close (acceptConnections conf cx)
+runServer :: String -> Int -> Cx -> IO ()
+runServer host port cx = withSocketsDo $ do
+    addr <- resolve host (show $ port)
+    bracket (open addr) close (acceptConnections HttpConf cx)
   where
     resolve host port = do
         let hints = defaultHints { addrSocketType = Stream, addrFlags = [AI_PASSIVE] }
