@@ -6,7 +6,6 @@ import qualified Data.Binary as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
-import Network.Socket (Socket)
 
 data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString | MsgInit BSL.ByteString | MsgTerminate deriving (Show, Eq)
 data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg }
@@ -37,10 +36,9 @@ data Req = Req
   , reqMeth :: BS.ByteString
   , reqVers :: BS.ByteString
   , reqHead :: [Header]
-  , reqSock :: Socket
   }
 
-mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [], reqSock = undefined }
+mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [] }
 
 data Resp = Resp
   { respCode :: Int

@@ -30,9 +30,9 @@ wsApp cx pending = do
   listen conn cx2
 
 -- | Make pending WS request from N2O request
-mkPending :: WS.ConnectionOptions -> Req -> IO WS.PendingConnection
-mkPending opts req = do
-  stream <- WSStream.makeSocketStream (reqSock req)
+mkPending :: WS.ConnectionOptions -> Socket -> Req -> IO WS.PendingConnection
+mkPending opts sock req = do
+  stream <- WSStream.makeSocketStream sock
   let requestHead = WS.RequestHead
                     { WS.requestPath = reqPath req
                     , WS.requestSecure = False

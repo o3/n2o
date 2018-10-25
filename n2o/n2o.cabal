@@ -30,7 +30,6 @@ library
                , bytestring
                , binary
                , bert
-               , network
   default-language: Haskell2010
 
 test-suite n2o-test

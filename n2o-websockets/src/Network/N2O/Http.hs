@@ -53,7 +53,7 @@ talk conf cx sock addr = do
     Right req -> do
       if needUpgrade req then do
             -- make pending ws request
-            pending <- mkPending WS.defaultConnectionOptions req{reqSock = sock}
+            pending <- mkPending WS.defaultConnectionOptions sock req
             -- n2o stream app
             wsApp cx{cxReq = req} pending
          else do
