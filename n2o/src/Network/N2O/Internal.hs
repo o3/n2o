@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
 
 data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString | MsgInit BSL.ByteString | MsgTerminate deriving (Show, Eq)
-data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg }
+data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg } --TODO: remove this type, use separate functions in Cx
 
 -- | @Msg -> Term -> Msg@ encoder/decoder
 bertCodec :: Codec Term Term
