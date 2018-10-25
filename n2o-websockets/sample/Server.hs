@@ -38,7 +38,9 @@ event Init = do
   return "qi('system').innerText='What is your name?'"
 
 event (Greet name) = do
-    return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+  return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+
+event (Terminate) = return ""
 
 -- | -----------------------------
 
