@@ -1,4 +1,4 @@
-# N2O protocol server in Haskell
+# N2O ecosystem for Haskell
 
 https://n2o.space
 
