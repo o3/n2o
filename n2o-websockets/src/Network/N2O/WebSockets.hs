@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Network.N2O.WebSocket ( wsApp , mkPending ) where
+module Network.N2O.WebSockets ( wsApp , mkPending ) where
 
 import           Control.Exception              (catch, finally)
 import           Control.Monad                  (forM_, forever, mapM_)

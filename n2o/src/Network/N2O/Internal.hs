@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Network.Socket (Socket)
 
-data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString deriving (Show)
+data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString deriving (Show, Eq)
 data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg }
 
 -- | @Msg -> Term -> Msg@ encoder/decoder

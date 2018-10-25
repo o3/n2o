@@ -12,7 +12,7 @@ import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
 import Network.N2O.Internal
-import Network.N2O.WebSocket
+import Network.N2O.WebSockets
 import Prelude hiding (takeWhile)
 import Data.Attoparsec.ByteString hiding (try)
 import Data.CaseInsensitive

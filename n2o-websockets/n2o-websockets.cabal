@@ -1,8 +1,8 @@
-name:           n2o
+name:           n2o-websockets
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o.hs#readme>
-homepage:       https://github.com/xafizoff/n2o.hs#readme
-bug-reports:    https://github.com/xafizoff/n2o.hs/issues
+description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o-hs#readme>
+homepage:       https://github.com/xafizoff/n2o-hs#readme
+bug-reports:    https://github.com/xafizoff/n2o-hs/issues
 author:         Marat Khafizov
 maintainer:     xafizoff@gmail.com
 copyright:      All rights reserved (c)
@@ -10,27 +10,21 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
-extra-source-files:
-    ChangeLog.md
-    README.md
+extra-source-files:  README.md
 
 source-repository head
   type: git
-  location: https://github.com/xafizoff/n2o.hs
+  location: https://github.com/xafizoff/n2o-hs
 
 library
-  exposed-modules:
-                  Network.N2O
-                , Network.N2O.Nitro
-                , Network.N2O.Internal
-                , Network.N2O.Http
-                , Network.N2O.WebSocket
-                , Network.N2O.Util
+  exposed-modules: Network.N2O.WebSockets
+                 , Network.N2O.Http
   other-modules:
-      Paths_n2o
+      Paths_n2o_websockets
   hs-source-dirs:
       src
   build-depends: base >= 4.7 && < 5
+               , n2o
                , websockets
                , network
                , text
@@ -48,32 +42,17 @@ library
 executable n2o-sample-server
   main-is: Server.hs
   other-modules:
-      Paths_n2o
+      Paths_n2o_websockets
   hs-source-dirs:
       sample
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
                 base >=4.7 && < 5
               , n2o
+              , n2o-websockets
               , bert
               , binary
               , bytestring
               , text
               , websockets
-  default-language: Haskell2010
-  default-extensions: TypeFamilies, OverloadedLists, OverloadedStrings
-
-test-suite n2o-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_n2o
-  hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-                base >=4.7 && < 5
-              , n2o
-              , bert
-              , hspec
   default-language: Haskell2010
