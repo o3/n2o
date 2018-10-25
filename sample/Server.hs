@@ -1,49 +1,54 @@
-{-# LANGUAGE OverloadedLists, OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
 import Network.N2O
 import Network.N2O.Util
 import Data.BERT
-import Data.String
-import GHC.Exts
+import qualified Data.Binary as B
+import qualified Data.ByteString.Lazy as BS
 
--- | Write @AtomTerm@s as string literals
-instance IsString Term where
-  fromString atom = AtomTerm atom
+-- | Define incoming event data type instead of dealing with Erlang @Term@s
+data Evt = Init | Terminate | Greet BS.ByteString deriving Show
 
--- | Write @TupleTerm@s and @NilTerm@ as lists
-instance IsList Term where
-  type Item Term = Term
-  fromList [] = NilTerm
-  fromList terms = TupleTerm terms
-  toList (TupleTerm terms) = terms
-  toList (ListTerm terms) = terms
-  toList NilTerm = []
+-- | Message decoder
+decoder msg@(MsgBin bin) =
+  case (dec bertCodec) msg of
+    Just (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm name]]) -> Just $ Greet name
+    _ -> Nothing
+decoder (MsgTxt "N2OInit") = Just Init
+decoder (MsgTxt "N2OTerminate") = Just Terminate
+-- | Message encoder
+encoder bs = MsgBin $ B.encode (TupleTerm [AtomTerm "io", BytelistTerm bs, NilTerm]) -- reply with IO message
 
-main = runServer "localhost" 3000 mkCx { cxHandlers = [router], cxProtos = [proto1] }
+initCx = mkCx
+  { cxHandlers = [router]
+  , cxProtos = [proto1]
+  , cxCodec = Codec { enc = encoder, dec = decoder }}
+main = runServer "localhost" 3000 initCx
 
-router :: Cx -> Cx
+router :: Cx Evt BS.ByteString -> Cx Evt BS.ByteString
 router cx = cx{ cxEvHnd = event } -- we have single (index) page only
 
 -- | Here's our event handler
-event :: Term -> IO Term
+event :: Evt -> IO BS.ByteString
 
-event ["init", _] = do
-  return $ BytelistTerm "qi('system').innerText='What is your name?'"
+event Init = do
+  return "qi('system').innerText='What is your name?'"
 
-event ["client", ["greet", BytelistTerm name]] = do
-    return $ BytelistTerm ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'")
-
-event ev = do
-  print ev -- print event and reply with empty string
-  return []
+event (Greet name) = do
+    return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
 
 -- | -----------------------------
 
-proto1 :: Proto
+proto1 :: Proto Evt BS.ByteString
 proto1 = Proto
   { protoInit = return ()
-  , protoInfo = \term cx -> do
-      rep <- (cxEvHnd cx) term
-      return ("reply", ["io", rep, []], cx) -- reply with IO message
+  , protoInfo = \msg cx@Cx{cxEvHnd=handle} -> do
+      let (Codec{enc=enc,dec=dec}) = cxCodec cx
+          evt = dec msg
+      case evt of
+        Just e -> do
+          rep <- handle e
+          return (Rslt Reply (enc rep), cx)
+        Nothing -> return (Rslt Unknown (MsgBin ""), cx)
   }

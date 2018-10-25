@@ -20,7 +20,7 @@ import qualified Network.WebSockets as WS
 
 data HttpConf = HttpConf
 
-runServer :: String -> Int -> Cx -> IO ()
+runServer :: String -> Int -> Cx a b -> IO ()
 runServer host port cx = withSocketsDo $ do
     addr <- resolve host (show $ port)
     bracket (open addr) close (acceptConnections HttpConf cx)
@@ -36,7 +36,7 @@ runServer host port cx = withSocketsDo $ do
         listen sock 10
         return sock
 
-acceptConnections :: HttpConf -> Cx -> Socket -> IO ()
+acceptConnections :: HttpConf -> Cx a b -> Socket -> IO ()
 acceptConnections conf cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -44,7 +44,7 @@ acceptConnections conf cx sock = do
             (\e@(SomeException _) -> print e))
   acceptConnections conf cx sock
 
-talk :: HttpConf -> Cx -> Socket -> SockAddr -> IO ()
+talk :: HttpConf -> Cx a b -> Socket -> SockAddr -> IO ()
 talk conf cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
