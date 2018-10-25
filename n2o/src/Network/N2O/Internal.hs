@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Network.Socket (Socket)
 
-data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString deriving (Show, Eq)
+data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString | MsgInit BSL.ByteString | MsgTerminate deriving (Show, Eq)
 data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg }
 
 -- | @Msg -> Term -> Msg@ encoder/decoder
@@ -20,8 +20,8 @@ bertCodec = Codec { dec = decode', enc = MsgBin . B.encode }
       case B.decodeOrFail bin of
         Right (_,_,term) -> Just term
         _ -> Nothing
-    decode' (MsgTxt "N2OInit") = Just $ AtomTerm "init"
-    decode' (MsgTxt "N2OTerminate") = Just $ AtomTerm "terminate"
+    decode' (MsgInit pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
+    decode' MsgTerminate = Just $ AtomTerm "terminate"
     decode' _ = Nothing
 
 data Cx a b = Cx

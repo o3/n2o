@@ -17,8 +17,8 @@ decoder msg@(MsgBin bin) =
   case (dec bertCodec) msg of
     Just (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm name]]) -> Just $ Greet name
     _ -> Nothing
-decoder (MsgTxt "N2OInit") = Just Init
-decoder (MsgTxt "N2OTerminate") = Just Terminate
+decoder (MsgInit _) = Just Init
+decoder (MsgTerminate) = Just Terminate
 -- | Message encoder
 encoder bs = MsgBin $ B.encode (TupleTerm [AtomTerm "io", BytelistTerm bs, NilTerm]) -- reply with IO message
 

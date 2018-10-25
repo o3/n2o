@@ -58,7 +58,7 @@ listen conn cx =
          _ -> do reply <- protoRun msg cx
                  process conn reply
      `finally` do
-    protoRun (MsgTxt "N2OTerminate") cx
+    protoRun MsgTerminate cx
     return ()
 
 process conn reply =
@@ -74,7 +74,7 @@ receiveN2O conn cx = do
     WS.Text bs _ ->
       case LC8.stripPrefix "N2O," bs of
         Just pid -> do
-          reply <- protoRun (MsgTxt "N2OInit") cx
+          reply <- protoRun (MsgInit pid) cx
           process conn reply
           return pid
         _ -> error "Protocol violation"
