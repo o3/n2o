@@ -51,6 +51,6 @@ proto1 = Proto
       case evt of
         Just e -> do
           rep <- handle e
-          return (Rslt Reply (enc rep), cx)
-        Nothing -> return (Rslt Unknown (MsgBin ""), cx)
+          return (Reply (enc rep), cx)
+        Nothing -> return (Unknown, cx)
   }

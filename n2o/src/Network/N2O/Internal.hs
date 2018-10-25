@@ -51,11 +51,8 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
--- | Action to perform
-data Act = Reply | Ok | Unknown deriving (Show, Eq)
-
 -- | Result of the message processing
-data Rslt = Rslt Act Msg
+data Rslt = Reply Msg | Ok | Unknown deriving (Show, Eq)
 
 -- | N2O protocol
 data Proto a b = Proto
@@ -67,12 +64,12 @@ protoRun :: Msg -> Cx a b -> IO (Rslt, Cx a b)
 protoRun msg cx = go [] msg cx (cxProtos cx)
   where
     nop :: Cx a b -> (Rslt, Cx a b)
-    nop cx = (Rslt Reply (MsgBin BSL.empty), cx)
+    nop cx = (Reply (MsgBin BSL.empty), cx)
     go :: [(Rslt, Cx a b)] -> Msg -> Cx a b -> [Proto a b] -> IO (Rslt, Cx a b)
     go _ _ state [] = return $ nop state
     go acc msg state (proto:protos) = do
         res <- protoInfo proto msg state
         case res of
-            (Rslt Unknown _, _) -> go acc msg state protos
-            (Rslt Reply msg1, state1) -> return $ (Rslt Reply msg1, state1)
+            (Unknown , _) -> go acc msg state protos
+            (Reply msg1, state1) -> return $ (Reply msg1, state1)
             a -> go (a:acc) msg state protos

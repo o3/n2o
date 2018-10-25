@@ -63,7 +63,7 @@ listen conn cx =
 
 process conn reply =
   case reply of
-   (Rslt Reply (MsgBin msg), state) -> WS.sendBinaryData conn msg
+   (Reply (MsgBin msg), state) -> WS.sendBinaryData conn msg
    _ -> error "Unknown response type"
 
 receiveN2O conn cx = do
