@@ -5,27 +5,27 @@ import Data.BERT
 
 main :: IO ()
 main = do
-  (t1, t2, _) <- protoRun [] cx
+  (t1, t2, _) <- protoRun NilTerm cx
   hspec $ do
     describe "nop reply test" $ do
       it "test1" $ do
-        t1 `shouldBe` "reply"
+        t1 `shouldBe` (AtomTerm "reply")
       it "test2" $ do
-        t2 `shouldBe` ["binary", []]
-  let proto1 = "proto1"
+        t2 `shouldBe` (TupleTerm [AtomTerm "binary", NilTerm])
+  let proto1 = AtomTerm "proto1"
   (t1, t2, _) <- protoRun proto1 cx
   hspec $ do
     describe "proto1 reply test" $ do
       it "test1" $ do
-        t1 `shouldBe` "reply"
+        t1 `shouldBe` (AtomTerm "reply")
       it "test2" $ do
         t2 `shouldBe` proto1
-  let proto2 = "proto2"
+  let proto2 = AtomTerm "proto2"
   (t1, t2, _) <- protoRun proto2 cx
   hspec $ do
     describe "proto2 reply test" $ do
       it "test1" $ do
-        t1 `shouldBe` "reply"
+        t1 `shouldBe` (AtomTerm "reply")
       it "test2" $ do
         t2 `shouldBe` proto2
 
@@ -34,15 +34,15 @@ cx = mkCx{cxProtos = protos}
 proto1 = Proto
   { protoInfo = \msg state ->
       case msg of
-        "proto1" -> return ("reply", "proto1", state)
-        _ -> return ("unknown", msg, state)
+        AtomTerm "proto1" -> return (AtomTerm "reply", AtomTerm "proto1", state)
+        _ -> return (AtomTerm "unknown", msg, state)
   , protoInit = return ()
   }
 proto2 = Proto
   { protoInfo = \msg state ->
      case msg of
-       "proto2" -> return ("reply", "proto2", state)
-       _ -> return ("unknown", msg, state)
+       AtomTerm "proto2" -> return (AtomTerm "reply", AtomTerm "proto2", state)
+       _ -> return (AtomTerm "unknown", msg, state)
   , protoInit = return ()
   }
 

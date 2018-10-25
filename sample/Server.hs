@@ -1,8 +1,24 @@
+{-# LANGUAGE OverloadedLists, OverloadedStrings, TypeFamilies #-}
 module Main (main) where
 
 import Network.N2O
 import Network.N2O.Util
 import Data.BERT
+import Data.String
+import GHC.Exts
+
+-- | Write @AtomTerm@s as string literals
+instance IsString Term where
+  fromString atom = AtomTerm atom
+
+-- | Write @TupleTerm@s and @NilTerm@ as lists
+instance IsList Term where
+  type Item Term = Term
+  fromList [] = NilTerm
+  fromList terms = TupleTerm terms
+  toList (TupleTerm terms) = terms
+  toList (ListTerm terms) = terms
+  toList NilTerm = []
 
 main = runServer "localhost" 3000 mkCx { cxHandlers = [router], cxProtos = [proto1] }
 
