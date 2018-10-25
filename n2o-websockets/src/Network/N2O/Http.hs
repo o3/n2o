@@ -20,6 +20,14 @@ import qualified Network.WebSockets as WS
 
 data HttpConf = HttpConf
 
+data Resp = Resp
+  { respCode :: Int
+  , respHead :: [Header]
+  , respBody :: BS.ByteString
+  } deriving (Show)
+
+mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
+
 runServer :: String -> Int -> Cx a b -> IO ()
 runServer host port cx = withSocketsDo $ do
     addr <- resolve host (show $ port)

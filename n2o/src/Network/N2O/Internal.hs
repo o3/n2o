@@ -40,14 +40,6 @@ data Req = Req
 
 mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [] }
 
-data Resp = Resp
-  { respCode :: Int
-  , respHead :: [Header]
-  , respBody :: BS.ByteString
-  } deriving (Show)
-
-mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
-
 -- | Result of the message processing
 data Rslt = Reply Msg | Ok | Unknown deriving (Show, Eq)
 
