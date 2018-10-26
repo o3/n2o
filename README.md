@@ -1,4 +1,4 @@
-# N2O ecosystem for Haskell
+# N2O ecosystem for Haskell (WIP)
 
 https://n2o.space
 
