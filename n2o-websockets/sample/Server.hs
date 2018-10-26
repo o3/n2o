@@ -14,7 +14,7 @@ data Evt = Init | Terminate | Greet BS.ByteString deriving Show
 
 -- | Message decoder
 decoder msg@(MsgBin bin) =
-  case (dec bertCodec) msg of
+  case decodeBert msg of
     Just (TupleTerm [AtomTerm "client", TupleTerm [AtomTerm "greet", BytelistTerm name]]) -> Just $ Greet name
     _ -> Nothing
 decoder (MsgInit _) = Just Init
@@ -25,7 +25,9 @@ encoder bs = MsgBin $ B.encode (TupleTerm [AtomTerm "io", BytelistTerm bs, NilTe
 initCx = mkCx
   { cxHandlers = [router]
   , cxProtos = [proto1]
-  , cxCodec = Codec { enc = encoder, dec = decoder }}
+  , cxEncode = encoder
+  , cxDecode = decoder
+  }
 main = runServer "localhost" 3000 initCx
 
 router :: Cx Evt BS.ByteString -> Cx Evt BS.ByteString
@@ -47,9 +49,8 @@ event (Terminate) = return ""
 proto1 :: Proto Evt BS.ByteString
 proto1 = Proto
   { protoInit = return ()
-  , protoInfo = \msg cx@Cx{cxEvHnd=handle} -> do
-      let (Codec{enc=enc,dec=dec}) = cxCodec cx
-          evt = dec msg
+  , protoInfo = \msg cx@Cx{cxEvHnd=handle,cxDecode=dec,cxEncode=enc} -> do
+      let evt = dec msg
       case evt of
         Just e -> do
           rep <- handle e

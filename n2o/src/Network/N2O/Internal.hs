@@ -8,28 +8,37 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
 
 data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString | MsgInit BSL.ByteString | MsgTerminate deriving (Show, Eq)
-data Codec a b = Codec { dec :: Msg -> Maybe a, enc :: b -> Msg } --TODO: remove this type, use separate functions in Cx
 
--- | @Msg -> Term -> Msg@ encoder/decoder
-bertCodec :: Codec Term Term
-bertCodec = Codec { dec = decode', enc = MsgBin . B.encode }
-  where
-    decode' (MsgBin bin) =
-      case B.decodeOrFail bin of
-        Right (_,_,term) -> Just term
-        _ -> Nothing
-    decode' (MsgInit pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
-    decode' MsgTerminate = Just $ AtomTerm "terminate"
-    decode' _ = Nothing
+-- | @Term -> Msg@ encoder
+encodeBert :: Term -> Msg
+encodeBert = MsgBin . B.encode
+-- | @Term -> Msg@ decoder
+decodeBert :: Msg -> Maybe Term
+decodeBert (MsgBin bin) =
+  case B.decodeOrFail bin of
+    Right (_,_,term) -> Just term
+    _ -> Nothing
+decodeBert (MsgInit pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
+decodeBert MsgTerminate = Just $ AtomTerm "terminate"
+decodeBert _ = Nothing
 
 data Cx a b = Cx
   { cxEvHnd :: a -> IO b
   , cxProtos :: [Proto a b]
   , cxReq :: Req
   , cxHandlers :: [Cx a b -> Cx a b]
-  , cxCodec :: Codec a b
+  , cxEncode :: b -> Msg
+  , cxDecode :: Msg -> Maybe a
   }
-mkCx = Cx { cxReq = undefined, cxEvHnd = undefined, cxHandlers = [], cxProtos = [], cxCodec = undefined }
+mkCx = Cx
+  { cxReq = undefined
+  , cxEvHnd = undefined
+  , cxHandlers = []
+  , cxProtos = []
+  , cxEncode = undefined
+  , cxDecode = undefined
+  }
+
 type Header = (BS.ByteString, BS.ByteString)
 data Req = Req
   { reqPath :: BS.ByteString
