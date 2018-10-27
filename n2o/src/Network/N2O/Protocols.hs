@@ -12,11 +12,7 @@ data System = Init L.ByteString | Terminate
 data N2O a = N2OClient (Client a) {-| N2ONitro (Nitro nitro)-} | N2OSystem System
 
 instance (BERT a) => BERT (N2O a) where
-    showBERT (N2OClient (Client c)) = TupleTerm [AtomTerm "client", showBERT c]
-    showBERT (N2OClient (Server s)) = TupleTerm [AtomTerm "server", showBERT s]
-    --  showBERT (N2ONitro (Nitro n)) = TupleTerm [AtomTerm "pickle", showBERT n]
-    showBERT (N2OSystem (Init pid)) = TupleTerm [AtomTerm "init", BytelistTerm pid]
-    showBERT (N2OSystem Terminate) = AtomTerm "terminate"
+    showBERT = undefined -- ^ we do not need this
     readBERT (TupleTerm [AtomTerm "client", x]) = readClient x Client
     readBERT (TupleTerm [AtomTerm "server", x]) = readClient x Server
     readBERT (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Right $ N2OSystem (Init pid)
