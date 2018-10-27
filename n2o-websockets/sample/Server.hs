@@ -25,6 +25,6 @@ event (N2OSystem system) = handleSystem system -- ^ handle system messages
 event (N2OClient client) = handleClient client -- ^ handle client messages
 handleSystem (Init _) =
   return "qi('system').innerText='What is your name?'"
+handleSystem Terminate = return ""
 handleClient(Client (Greet name)) =
   return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
-handleSystem Terminate = return ""
