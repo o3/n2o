@@ -2,6 +2,7 @@ resolver: lts-12.13
 packages:
 - ./n2o
 - ./n2o-websockets
+- ./n2o-example
 extra-deps:
 - bert-1.2.2.5
 - fmt-0.6
