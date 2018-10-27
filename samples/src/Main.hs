@@ -22,7 +22,7 @@ router cx = cx{ cxEvHnd = event } -- we have single (index) page only
 
 event (N2OSystem system) = handleSystem system -- ^ handle system messages
 event (N2OClient client) = handleClient client -- ^ handle client messages
-event _ = putStrLn "Unknown event" -- ^ @catch all@ pattern
+event _ = putStrLn "Unknown event" >> return "" -- ^ @catch all@ pattern
 handleSystem (Init _) =
   return "qi('system').innerText='What is your name?'"
 handleSystem Terminate = return ""
