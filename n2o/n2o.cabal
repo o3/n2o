@@ -21,6 +21,7 @@ library
                   Network.N2O
                 , Network.N2O.Internal
                 , Network.N2O.Util
+                , Network.N2O.Protocols
   other-modules:
       Paths_n2o
   hs-source-dirs:

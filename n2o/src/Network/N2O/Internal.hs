@@ -6,6 +6,7 @@ import qualified Data.Binary as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
+import Control.Exception (SomeException)
 
 data Msg = MsgTxt TL.Text | MsgBin BSL.ByteString | MsgInit BSL.ByteString | MsgTerminate deriving (Show, Eq)
 
@@ -58,11 +59,12 @@ data Proto a b = Proto
   , protoInit :: IO ()
   }
 
+nop :: Cx a b -> (Rslt, Cx a b)
+nop cx = (Reply (MsgBin BSL.empty), cx)
+
 protoRun :: Msg -> Cx a b -> IO (Rslt, Cx a b)
 protoRun msg cx = go [] msg cx (cxProtos cx)
   where
-    nop :: Cx a b -> (Rslt, Cx a b)
-    nop cx = (Reply (MsgBin BSL.empty), cx)
     go :: [(Rslt, Cx a b)] -> Msg -> Cx a b -> [Proto a b] -> IO (Rslt, Cx a b)
     go _ _ state [] = return $ nop state
     go acc msg state (proto:protos) = do
