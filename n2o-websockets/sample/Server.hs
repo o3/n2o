@@ -21,9 +21,10 @@ instance BERT Example where
 router :: Cx (N2O Example) L.ByteString -> Cx (N2O Example) L.ByteString
 router cx = cx{ cxEvHnd = event } -- we have single (index) page only
 
-event :: N2O Example -> IO L.ByteString
-event (N2OSystem (Init _)) =
+event (N2OSystem system) = handleSystem system -- ^ handle system messages
+event (N2OClient client) = handleClient client -- ^ handle client messages
+handleSystem (Init _) =
   return "qi('system').innerText='What is your name?'"
-event (N2OClient (Client (Greet name))) =
+handleClient(Client (Greet name)) =
   return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
-event (N2OSystem Terminate) = return ""
+handleSystem Terminate = return ""
