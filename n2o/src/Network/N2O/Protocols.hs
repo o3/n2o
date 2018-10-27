@@ -11,23 +11,25 @@ data System = Init L.ByteString | Terminate
 
 data N2O a = N2OClient (Client a) {-| N2ONitro (Nitro nitro)-} | N2OSystem System
 
-instance (BERT a) => BERT (N2O a) where
-    showBERT = undefined -- ^ we do not need this
-    readBERT (TupleTerm [AtomTerm "client", x]) = readClient x Client
-    readBERT (TupleTerm [AtomTerm "server", x]) = readClient x Server
-    readBERT (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Right $ N2OSystem (Init pid)
-    readBERT (AtomTerm "terminate") = Right $ N2OSystem Terminate
-    readBERT _ = Left "N2O BERT instance: Unknown format"
+class Bert a where
+  readBert :: Term -> Maybe a
 
-readClient x f = case readBERT x of
-                   Right term -> Right $ N2OClient (f term)
-                   Left err -> Left err
+instance (Bert a) => Bert (N2O a) where
+    readBert (TupleTerm [AtomTerm "client", x]) = readClient x Client
+    readBert (TupleTerm [AtomTerm "server", x]) = readClient x Server
+    readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2OSystem (Init pid)
+    readBert (AtomTerm "terminate") = Just $ N2OSystem Terminate
+    readBert _ = Nothing
+
+readClient x f = case readBert x of
+                   Just term -> Just $ N2OClient (f term)
+                   _ -> Nothing
 
 -- | default decoder
 defDecoder msg =
   case decodeBert msg of
-    Just term -> case readBERT term of
-                   Right x -> Just x
+    Just term -> case readBert term of
+                   Just x -> Just x
                    _ -> Nothing
     _ -> Nothing
 -- | default encoder

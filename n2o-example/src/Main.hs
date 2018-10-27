@@ -13,10 +13,9 @@ import qualified Data.ByteString.Lazy as L
 main = runServer "localhost" 3000 (createCx router)
 
 data Example = Greet L.ByteString deriving (Show, Eq)
-instance BERT Example where
-  showBERT = undefined -- we don't need this
-  readBERT (TupleTerm [AtomTerm "greet", BytelistTerm name]) = Right $ Greet name
-  readBERT _ = Left "Unknown term"
+instance Bert Example where
+  readBert (TupleTerm [AtomTerm "greet", BytelistTerm name]) = Just $ Greet name
+  readBert _ = Nothing
 
 router :: Cx (N2O Example) L.ByteString -> Cx (N2O Example) L.ByteString
 router cx = cx{ cxEvHnd = event } -- we have single (index) page only
