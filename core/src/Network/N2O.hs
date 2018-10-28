@@ -1,5 +1,7 @@
 module Network.N2O
- ( module Network.N2O.Internal
+ ( module Network.N2O.Types
+ , module Network.N2O.Internal
  ) where
 
+import Network.N2O.Types
 import Network.N2O.Internal

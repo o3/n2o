@@ -19,6 +19,7 @@ source-repository head
 library
   exposed-modules:
                   Network.N2O
+                , Network.N2O.Types
                 , Network.N2O.Internal
                 , Network.N2O.Util
                 , Network.N2O.Protocols
@@ -31,6 +32,8 @@ library
                , bytestring
                , binary
                , bert
+               , stm
+               , containers
   default-language: Haskell2010
 
 test-suite n2o-test

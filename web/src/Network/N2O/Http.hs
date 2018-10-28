@@ -11,6 +11,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
+import Network.N2O.Types
 import Network.N2O.Internal
 import Network.N2O.WebSockets
 import Prelude hiding (takeWhile)

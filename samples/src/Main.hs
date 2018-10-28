@@ -17,14 +17,12 @@ instance Bert Example where
   readBert (TupleTerm [AtomTerm "greet", BytelistTerm name]) = Just $ Greet name
   readBert _ = Nothing
 
-router :: Cx (N2O Example) L.ByteString -> Cx (N2O Example) L.ByteString
+--router :: Cx (N2OProto Example) L.ByteString -> Cx (N2OProto Example) L.ByteString
 router cx = cx{ cxEvHnd = event } -- we have single (index) page only
 
-event (N2OSystem system) = handleSystem system -- ^ handle system messages
+event (N2ONitro nitro) = handleNitro nitro -- ^ handle system messages
 event (N2OClient client) = handleClient client -- ^ handle client messages
-event _ = putStrLn "Unknown event" >> return "" -- ^ @catch all@ pattern
-handleSystem (Init _) =
+handleNitro (Init _) =
   return "qi('system').innerText='What is your name?'"
-handleSystem Terminate = return ""
 handleClient(Client (Greet name)) =
   return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
