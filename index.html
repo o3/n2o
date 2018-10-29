@@ -1,0 +1,109 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>N2O.HS</title>
+    <link rel="stylesheet" href="https://synrc.space/synrc.css" />
+</head>
+
+<body>
+
+<nav>
+    <a href='https://synrc.space/'>SYNRC</a>
+    <a href='https://n2o.space'>N2O</a>
+</nav>
+
+<header>
+    <a href="https://n2o.space"><img src="https://synrc.space/images/Synrc Neo.svg?v=1"></a>
+    <h1>N2O.HS</h1>
+</header>
+
+<aside>
+    <article>
+        <section>
+            <h3>Motivation</h3>
+            <div>
+                Introduce N2O Protocols for Haskell programming language.
+                Create a single N2O Ecosystem for Enterprise Protocol Federation
+                and establish a solid CORBA/WS-SOAP/XMPP-replacement, ready for high-speed,
+                low-latency IoT applications.
+            </div>
+        </section>
+
+        <section>
+            <a name=plugin><h3>MANUAL</h3></a>
+            <div><ul>
+           <li><a href="man/internal.htm">INTERNAL</a></font></li>
+           <li><a href="man/protocols.htm">PROTOCOLS</a></font></li>
+           <li><a href="man/types.htm">TYPES</a></font></li>
+            </ul></div>
+            <br>
+            <div>
+                26 OCT 2018 &copy; <a href="http://5ht.co/license.htm">DHARMA LICENSE</a>
+            </div>
+
+        </section>
+    </article>
+</aside>
+<main>
+    <section>
+
+        <h3>Idiomatic N2O Haskell</h3>
+        <p>
+            Starting from 4.5, <a href="https://n2o.space">N2O</a> reduces everything that duplicates MQTT features.
+            On the other hand, MQTT version is a completely N2O-compatible embeddable protocol relay
+            with limited features. And it takes only 25KB in Erlang.
+        </p>
+
+        <figure>
+            <figcaption>Listing 2. N2O Context Setup</figcaption>
+        <code>
+    data Example = Greet deriving (Show, Eq, Read)
+
+    main = runServer "localhost" 3000 cx
+    cx = createCx router
+    router cx@Cx{cxReq=Req{reqPath=path}} =
+      let handler = case path of
+                      "/ws/samples/static/index.html" -> index
+                      "/ws/samples/static/about.html" -> about
+                      _ -> index
+      in traceShow path cx{cxHandler=handler}
+        </code></figure>
+
+        <figure>
+            <figcaption>Listing 3. NITRO Protocol Event Handler</figcaption>
+        <code>
+    index Init = do
+      ev <- renderEvent Event{ eventTarget   = "send",
+                               eventPostback = Greet,
+                               eventType     = "click",
+                               eventSource   = ["name"] }
+      return $ "qi('system').innerText='What is your name?';" <> ev
+
+    index (Message Greet) = do
+      Just name <- get "name" -- wf:q/1
+      return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+
+    about Init = do
+      return $ "qi('app').innerText='This is the N2O Hello World App'"
+        </code></figure>
+    </section>
+
+    <section>
+        <a name=plugin><h3>Related Documents</h3></a>
+        <div>
+        <ul>
+        </ul></div>
+    </section>
+</main>
+
+<footer>
+    Made with <span class="heart">❤</span> for Haskell and N2O
+</footer>
+
+</body>
+</html>

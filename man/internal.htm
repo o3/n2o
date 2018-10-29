@@ -1,0 +1,98 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>INTERNAL</title>
+    <link rel="stylesheet" href="https://synrc.space/synrc.css" />
+</head>
+
+<body>
+
+<nav>
+    <a href='https://synrc.space/'>SYNRC</a>
+    <a href='https://n2o.space'>N2O</a>
+    <a href='https://haskell.n2o.space'>HASKELL</a>
+</nav>
+
+<header>
+    <a href="../index.html"><img src="https://n2o.space/img/Synrc Neo.svg"></a>
+    <h1>INTERNAL</h1>
+</header>
+
+<main>
+    <section>
+
+
+<h3>INTRO</h3>
+
+<p>The <b>INTERNAL</b> module dedicated for holding core <b>N2O</b> structures.</p>
+
+    </section>
+    <section>
+
+<h3>PICKLER</h3>
+
+<h4>pickle :: (Show a) => a -> L.ByteString
+<h4>depickle :: (Read a) => L.ByteString -> Maybe a
+
+    </section>
+    <section>
+
+<h3>FORMATTER</h3>
+
+<h4>encode :: Term -> Msg</h4>
+
+<h4>decode :: Msg -> Maybe Term</h4>
+
+</section>
+<section>
+
+<h3>LOOP</h3>
+
+<h4>run :: forall f a b. Msg -> N2O f a b Rslt</h4>
+
+<p></p>
+
+<figure><figcaption>Listing 3. Haskell N2O Protocol Loop</figcaption><code>
+  protoRun msg = do
+    ref <- ask
+    cx@Cx{cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
+    go [] msg protos decode
+  where
+    go _ _ [] _ = return $ nop
+    go acc msg (proto:protos) decoder = do
+      let mbDecoded = decoder msg
+      case mbDecoded of
+        Just decoded -> do
+          res <- protoInfo proto decoded
+          case res of
+            Unknown -> go acc msg protos decoder
+            Reply msg1 -> return $ Reply msg1
+            a -> go (a:acc) msg protos decoder
+        _ -> go acc msg protos decoder
+
+</code></figure>
+
+</section>
+
+    <section>
+
+<p>This module may refer to:
+<b>
+<a href="types.htm">TYPES</a></b>,
+<a href="types.htm">PROTOCOLS</a></b>
+</p>
+
+    </section>
+</main>
+
+<footer>
+    2005&mdash;2017 &copy; Synrc Research Center
+</footer>
+
+</body>
+</html>
