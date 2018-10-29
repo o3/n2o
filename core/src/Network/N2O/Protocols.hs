@@ -12,9 +12,7 @@ import qualified Data.Binary as B
 import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Base64.Lazy as B64
 import Control.Monad (forM_)
-import Debug.Trace
 
-data Client a = C a | S a deriving (Show)
 data Nitro a =
    I L.ByteString
  | P { pickleSource  :: L.ByteString
@@ -23,39 +21,15 @@ data Nitro a =
      }
  deriving (Show)
 
-data N2OProto a = N2OClient (Client a) | N2ONitro (Nitro a) deriving (Show)
+data N2OProto a = N2ONitro (Nitro a) deriving (Show)
 
-class Bert a where
-  readBert :: Term -> Maybe a
-
-instance Bert (N2OProto a) where
---    readBert (TupleTerm [AtomTerm "client", x]) = readClient x C
---    readBert (TupleTerm [AtomTerm "server", x]) = readClient x S
-    readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (I pid)
---    readBert (AtomTerm "terminate") = Just $ Nitro Terminate
-    readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
-        Just $ N2ONitro (P source pickled (convert linked))
-      where
-        convert [] = M.empty
-        convert (TupleTerm [AtomTerm k, BytelistTerm v] : vs) = M.insert (C8.pack k) v (convert vs)
-    readBert _ = Nothing
-
---readClient x f = case readBert x of
---                   Just term -> Just $ N2OClient (f term)
---                   _ -> Nothing
-
---clientProto :: (Show a) => Proto a L.ByteString
---clientProto = Proto { protoInit = return (), protoInfo = clientInfo }
-
---clientInfo :: (Show a) => Msg -> Cx a L.ByteString -> N2O (Rslt, Cx a L.ByteString)
---clientInfo message cx@Cx{cxEvHnd=handle,cxEncode=encode,cxDecode=decode} = do
---  let decoded = decode message
---  case decoded of
---    Just msg@(N2OClient cli) -> do
---      lift $ print msg
---      reply <- handle msg
---      return (Reply (encode reply), cx)
---    _ -> return $ (Unknown, cx)
+readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (I pid)
+readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
+    Just $ N2ONitro (P source pickled (convert linked))
+  where
+    convert [] = M.empty
+    convert (TupleTerm [AtomTerm k, BytelistTerm v] : vs) = M.insert (C8.pack k) v (convert vs)
+readBert _ = Nothing
 
 nitroProto :: (Show a) => Proto N2OProto a L.ByteString
 nitroProto = Proto { protoInfo = nitroInfo }
@@ -106,14 +80,3 @@ defDePickle bs =
   case B64.decode bs of
     Right x -> Just $ read $ CL8.unpack x
     _ -> Nothing
-
---defPickle :: (B.Binary a) => a -> L.ByteString
---defPickle = B64.encode . B.encode
---
---defDePickle :: (B.Binary a) => L.ByteString -> Maybe a
---defDePickle bs =
---  case B64.decode bs of
---    Right x -> case B.decodeOrFail x of
---                 Right (_,_,x) -> Just x
---                 Left _ -> Nothing
---    Left _ -> Nothing
