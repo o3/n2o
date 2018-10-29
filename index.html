@@ -48,6 +48,13 @@
                 29 OCT 2018 &copy; <a href="https://github.com/xafizoff">Marat Khafizov</a> BSD 3-clause
             </div>
 
+        <figure>
+        <code>
+  git clone git://github.com/xafizoff/n2o-hs
+  cd n2o-hs
+  stack build
+        </code>
+        </figure>
         </section>
     </article>
 </aside>
@@ -56,8 +63,8 @@
 
         <h3>N2O Haskell</h3>
 
-        <p>The philosophy behind N2O is to be simple, clean and pure.
-           The core of N2O is 500 LOC.</p>
+        <p>The philosophy behind N2O is a simplicity, cleanness and purity.
+           The core of N2O shoud be no more than 500 LOC.</p>
 
         <figure>
             <figcaption>Listing 2. N2O Context Setup</figcaption>
@@ -74,11 +81,16 @@
       in traceShow path cx{cxHandler=handler}
         </code></figure>
 
+        <p>The idea to send prerendered JavaScript events over the
+           wire belongs to Rusty Klophaus who made Nitrogen Erlang web framework.
+           Later this was refined by N2O team and now available
+           in its purity of Haskell.</p>
+
         <figure>
             <figcaption>Listing 3. NITRO Web Protocol</figcaption>
         <code>
     index Init = do
-      wire (ARaw "qi('system').innerText='What is your name?'")
+      wire $ ARaw "qi('system').innerText='What is your name?'"
       wire $ AEvent Event { eventTarget   = "send"
                           , eventPostback = Greet
                           , eventType     = "click"
@@ -87,15 +99,15 @@
 
     index (Message Greet) = do
       Just name <- get "name"
-      wire (ARaw ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"))
+      wire $ ARaw $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
 
     about Init = do
-      wire (ARaw "qi('app').innerText='This is the N2O Hello World App'")
+      wire $ ARaw "qi('app').innerText='This is the N2O Hello World App'"
         </code></figure>
     </section>
 
     <section>
-        <a name=plugin><h3>Related Documents</h3></a>
+        <a name=plugin><h3>Documents</h3></a>
         <div>
         <ul>
          <a href="man/network.htm">NETWORK</a></b>,
