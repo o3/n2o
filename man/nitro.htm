@@ -13,7 +13,7 @@
 <body>
 
 <nav>
-    <a href='https://synrc.space/'>SYNRC</a>
+    <!--a href='https://synrc.space/'>SYNRC</a-->
     <a href='https://n2o.space'>N2O</a>
     <a href='https://haskell.n2o.space'>HASKELL</a>
 </nav>
@@ -45,10 +45,8 @@
 
 </code></figure>
 
-<h4>renderAction :: Action a -> N2O f a b BL.ByteString</h4>
-<h4>renderActions :: [Action a] -> N2O f a b BL.ByteString</h4>
 <h4>renderEvent :: Event a -> N2O f a b BL.ByteString</h4>
-<h4>wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString</h4>
+
 
     </section>
     <section>
@@ -60,6 +58,9 @@
                 | ARaw BL.ByteString deriving (Show, Generic)
 
 </code></figure>
+
+<h4>renderAction :: Action a -> N2O f a b BL.ByteString</h4>
+<h4>wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString</h4>
 
     </section>
     <section>
