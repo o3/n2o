@@ -1,6 +1,6 @@
-# N2O ecosystem for Haskell (WIP)
+# N2O for Haskell
 
-https://n2o.space
+https://haskell.n2o.space
 
 ## Run the sample code
 

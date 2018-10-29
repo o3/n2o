@@ -1,0 +1,87 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>Types</title>
+    <link rel="stylesheet" href="https://synrc.space/synrc.css" />
+</head>
+
+<body>
+
+<nav>
+    <a href='https://synrc.space/'>SYNRC</a>
+    <a href='https://n2o.space'>N2O</a>
+    <a href='https://haskell.n2o.space'>HASKELL</a>
+</nav>
+
+<header>
+    <a href="../index.html"><img src="https://n2o.space/img/Synrc Neo.svg"></a>
+    <h1>TYPES</h1>
+</header>
+
+<main>
+    <section>
+
+<h3>INTRO</h3>
+
+<p></p>
+
+    </section>
+
+    <section>
+
+<h3>CONTEXT</h3>
+
+<figure><figcaption>Listing 1. N2O Context</figcaption><code>
+  data Cx (f :: * -> *) (a :: *) (b :: *)
+     = Cx
+     { cxHandler :: W a -> N2O f a b b
+     , cxReq :: Req
+     , cxMiddleware :: [Cx f a b -> Cx f a b]
+     , cxDePickle :: BL.ByteString -> Maybe a
+     , cxPickle :: a -> BL.ByteString
+     , cxProtos :: [Proto f a b]
+     , cxEncoder :: Encoder b
+     , cxDecoder :: Decoder (f a)
+     , cxState :: Map BS.ByteString BL.ByteString
+     }
+
+</code></figure>
+
+    <section>
+
+<h3>STATE</h3>
+
+<figure><figcaption>Listing 2. N2O State</figcaption><code>
+  type N2OState (f :: * -> *) (a :: *) (b :: *) = IORef (Cx f a b)
+  type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
+  newtype N2OM state m a = N2OM { runN2O :: state -> m a }
+
+</code></figure>
+
+<h4>lift :: m a -> N2OM state m a</h4>
+<h4>ask :: (Monad m) => N2OM state m state</h4>
+<h4>put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a b ()</h4>
+<h4>get :: (B.Binary bin) => BS.ByteString -> N2O f a b (Maybe bin)</h4>
+    </section>
+
+    <section>
+
+<p>This module may refer to:
+<a href="types.htm">INTERNAL</a></b>,
+<a href="types.htm">PROTOCOLS</a></b>
+</p>
+
+    </section>
+</main>
+
+<footer>
+    2005&mdash;2017 &copy; Synrc Research Center
+</footer>
+
+</body>
+</html>
