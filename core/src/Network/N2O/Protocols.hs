@@ -4,33 +4,89 @@ import Network.N2O.Types
 import Network.N2O.Internal
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString      as BS
+import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString.Lazy.Char8 as CL8
 import Data.BERT
+import Data.IORef
 import qualified Data.Binary as B
 import qualified Data.Map.Strict as M
+import qualified Data.ByteString.Base64.Lazy as B64
+import Control.Monad (forM_)
+import Debug.Trace
 
-data Client a = Client a | Server a deriving (Show)
-data Nitro = Init L.ByteString
- | Pickle { pickleSource  :: BS.ByteString
-          , picklePickled :: L.ByteString
-          , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
-          }
+data Client a = C a | S a deriving (Show)
+data Nitro a =
+   I L.ByteString
+ | P { pickleSource  :: L.ByteString
+     , picklePickled :: L.ByteString
+     , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
+     }
  deriving (Show)
 
-data N2OProto a = N2OClient (Client a) | N2ONitro Nitro deriving (Show)
+data N2OProto a = N2OClient (Client a) | N2ONitro (Nitro a) deriving (Show)
 
 class Bert a where
   readBert :: Term -> Maybe a
 
-instance (Bert a) => Bert (N2OProto a) where
-    readBert (TupleTerm [AtomTerm "client", x]) = readClient x Client
-    readBert (TupleTerm [AtomTerm "server", x]) = readClient x Server
-    readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (Init pid)
+instance Bert (N2OProto a) where
+--    readBert (TupleTerm [AtomTerm "client", x]) = readClient x C
+--    readBert (TupleTerm [AtomTerm "server", x]) = readClient x S
+    readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (I pid)
 --    readBert (AtomTerm "terminate") = Just $ Nitro Terminate
+    readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
+        Just $ N2ONitro (P source pickled (convert linked))
+      where
+        convert [] = M.empty
+        convert (TupleTerm [AtomTerm k, BytelistTerm v] : vs) = M.insert (C8.pack k) v (convert vs)
     readBert _ = Nothing
 
-readClient x f = case readBert x of
-                   Just term -> Just $ N2OClient (f term)
-                   _ -> Nothing
+--readClient x f = case readBert x of
+--                   Just term -> Just $ N2OClient (f term)
+--                   _ -> Nothing
+
+--clientProto :: (Show a) => Proto a L.ByteString
+--clientProto = Proto { protoInit = return (), protoInfo = clientInfo }
+
+--clientInfo :: (Show a) => Msg -> Cx a L.ByteString -> N2O (Rslt, Cx a L.ByteString)
+--clientInfo message cx@Cx{cxEvHnd=handle,cxEncode=encode,cxDecode=decode} = do
+--  let decoded = decode message
+--  case decoded of
+--    Just msg@(N2OClient cli) -> do
+--      lift $ print msg
+--      reply <- handle msg
+--      return (Reply (encode reply), cx)
+--    _ -> return $ (Unknown, cx)
+
+nitroProto :: (Show a) => Proto N2OProto a L.ByteString
+nitroProto = Proto { protoInfo = nitroInfo }
+
+nitroInfo :: (Show a) => N2OProto a -> N2O N2OProto a L.ByteString Rslt
+nitroInfo message = do
+  ref <- ask
+  cx@Cx{cxHandler=handle,cxEncoder=encode,cxDePickle=dePickle} <- lift $ readIORef ref
+  lift $ putStrLn ("NITRO : " ++ show message)
+  case message of
+    msg@(N2ONitro (I pid)) -> do
+--      lift $ print msg
+      reply <- handle Init
+      return $ Reply (encode reply)
+    msg@(N2ONitro (P _source pickled linked)) -> do
+      forM_ (M.toList linked) (\(k,v) -> put k v)
+      case dePickle pickled of
+        Just x -> do
+          reply <- handle (Message x)
+          return $ Reply (encode reply)
+        _ -> return Unknown
+    _ -> return Unknown
+
+createCx router = mkCx
+  { cxMiddleware = [router]
+  , cxProtos = [nitroProto]
+  , cxDecoder = defDecoder
+  , cxEncoder = defEncoder
+  , cxDePickle = defDePickle
+  , cxPickle = defPickle
+  }
 
 -- | default decoder
 defDecoder msg =
@@ -42,34 +98,22 @@ defDecoder msg =
 -- | default encoder
 defEncoder bs = MsgBin (B.encode (TupleTerm [AtomTerm "io", BytelistTerm bs, NilTerm]))
 
-clientProto :: (Show a) => Proto (N2OProto a) L.ByteString
-clientProto = Proto { protoInit = return (), protoInfo = clientInfo }
+defPickle :: (Show a) => a -> L.ByteString
+defPickle = B64.encode . CL8.pack . show
 
-nitroProto :: (Show a) => Proto (N2OProto a) L.ByteString
-nitroProto = Proto { protoInit = return (), protoInfo = nitroInfo }
+defDePickle :: (Read a) => L.ByteString -> Maybe a
+defDePickle bs =
+  case B64.decode bs of
+    Right x -> Just $ read $ CL8.unpack x
+    _ -> Nothing
 
-clientInfo :: (Show a) => Msg -> Cx (N2OProto a) L.ByteString -> N2O (Rslt, Cx (N2OProto a) L.ByteString)
-clientInfo message cx@Cx{cxEvHnd=handle,cxEncode=encode,cxDecode=decode} = do
-  let decoded = decode message
-  case decoded of
-    Just msg@(N2OClient cli) -> do
-      lift $ print msg
-      reply <- handle msg
-      return (Reply (encode reply), cx)
-    _ -> return $ (Unknown, cx)
-
-nitroInfo :: (Show a) => Msg -> Cx (N2OProto a) L.ByteString -> N2O (Rslt, Cx (N2OProto a) L.ByteString)
-nitroInfo message cx@Cx{cxEvHnd=handle,cxEncode=encode,cxDecode=decode} = do
-  let decoded = decode message
-  case decoded of
-    Just msg@(N2ONitro (Init pid)) -> {- TODO: depickle -} do
-      lift $ print msg
-      reply <- handle msg
-      return (Reply (encode reply), cx)
-    Just msg@(N2ONitro (Pickle _source pickled linked)) -> do
-      _ <- handle msg
-      return (Ok, cx)
-    _ -> return $ (Unknown, cx)
-
-createCx router =
-  mkCx{ cxHandlers = [router], cxProtos = [clientProto, nitroProto], cxEncode = defEncoder, cxDecode = defDecoder }
+--defPickle :: (B.Binary a) => a -> L.ByteString
+--defPickle = B64.encode . B.encode
+--
+--defDePickle :: (B.Binary a) => L.ByteString -> Maybe a
+--defDePickle bs =
+--  case B64.decode bs of
+--    Right x -> case B.decodeOrFail x of
+--                 Right (_,_,x) -> Just x
+--                 Left _ -> Nothing
+--    Left _ -> Nothing

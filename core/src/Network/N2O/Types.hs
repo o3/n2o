@@ -1,3 +1,4 @@
+{-# LANGUAGE KindSignatures #-}
 module Network.N2O.Types where
 
 import qualified Data.Text.Lazy as TL
@@ -7,8 +8,20 @@ import Data.IORef
 import qualified Data.Binary as B
 import Data.Map.Strict (Map, insert, (!?))
 
-type N2OState = IORef (Map BS.ByteString BL.ByteString)
-type N2O = N2OM N2OState IO
+
+data Cx (f :: * -> *) (a :: *) (b :: *) = Cx
+  { cxHandler :: W a -> N2O f a b b
+  , cxReq :: Req
+  , cxMiddleware :: [Cx f a b -> Cx f a b]
+  , cxDePickle :: BL.ByteString -> Maybe a
+  , cxPickle :: a -> BL.ByteString
+  , cxProtos :: [Proto f a b]
+  , cxEncoder :: Encoder b
+  , cxDecoder :: Decoder (f a)
+  , cxState :: Map BS.ByteString BL.ByteString
+  }
+type N2OState (f :: * -> *) (a :: *) (b :: *) = IORef (Cx f a b)
+type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
 
 -- | Lightweight version of ReaderT from @transformers@ package
 newtype N2OM state m a = N2OM { runN2O :: state -> m a }
@@ -25,16 +38,20 @@ instance Monad m => Monad (N2OM state m) where
 lift :: m a -> N2OM state m a
 lift m = N2OM (const m)
 
-put :: (B.Binary a) => BS.ByteString -> a -> N2O ()
-put k v = do
-  state <- N2OM return
-  lift $ modifyIORef state (\m -> insert k (B.encode v) m)
+ask :: (Monad m) => N2OM state m state
+ask = N2OM return
 
-get :: (B.Binary a) => BS.ByteString -> N2O (Maybe a)
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a b ()
+put k v = do
+  state <- ask
+  lift $ modifyIORef state (\cx@Cx{cxState=m} -> cx{cxState=insert k (B.encode v) m})
+
+get :: (B.Binary bin) => BS.ByteString -> N2O f a b (Maybe bin)
 get k = do
   state <- N2OM return
-  m <- lift $ readIORef state
-  case m !? k of
+  cx <- lift $ readIORef state
+  let mp = cxState cx
+  case mp !? k of
     Just v -> return $ Just (B.decode v)
     _ -> return Nothing
 
@@ -52,17 +69,11 @@ data Req = Req
 data Rslt = Reply Msg | Ok | Unknown deriving (Show, Eq)
 
 -- | N2O protocol
-data Proto a b = Proto
-  { protoInfo :: Msg -> Cx a b -> N2O (Rslt, Cx a b)
-  , protoInit :: N2O ()
+data Proto (f :: * -> *) (a :: *) (b :: *) = Proto
+  { protoInfo :: f a -> N2O f a b Rslt
   }
 
-data Cx a b = Cx
-  { cxEvHnd :: a -> N2O b
-  , cxProtos :: [Proto a b]
-  , cxReq :: Req
-  , cxHandlers :: [Cx a b -> Cx a b]
-  , cxEncode :: b -> Msg
-  , cxDecode :: Msg -> Maybe a
-  }
+data W a = Init | Message a | Terminate
 
+type Encoder (a :: *) = a -> Msg
+type Decoder (a :: *) = Msg -> Maybe a

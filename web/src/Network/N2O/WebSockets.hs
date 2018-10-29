@@ -18,20 +18,20 @@ import qualified Network.WebSockets.Stream      as WSStream
 import           Data.IORef
 import qualified Data.Map.Strict                as M
 
-wsApp :: Cx a b -> WS.ServerApp
+wsApp :: Cx f a b -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx{cxReq = mkReq {reqPath = path}}
-      handlers = cxHandlers cx1
+      handlers = cxMiddleware cx1
       applyHandlers = \hs ctx ->
         case hs of
           [] -> ctx
           (h:hs') -> applyHandlers hs' (h ctx)
       cx2 = applyHandlers handlers cx1
   conn <- WS.acceptRequest pending
-  state <- newIORef M.empty
+  ref <- newIORef cx2
   WS.forkPingThread conn 30
-  listen conn cx2 state
+  listen conn ref
 
 -- | Make pending WS request from N2O request
 mkPending :: WS.ConnectionOptions -> Socket -> Req -> IO WS.PendingConnection
@@ -48,9 +48,9 @@ mkPending opts sock req = do
     , WSConn.pendingStream = stream
     }
 
-listen :: WS.Connection -> Cx a b -> N2OState -> IO ()
-listen conn cx state =
-  do pid <- receiveN2O conn cx state
+listen :: WS.Connection -> N2OState f a b -> IO ()
+listen conn state =
+  do pid <- receiveN2O conn state
      forever $ do
        message <- WS.receiveDataMessage conn
        msg <-
@@ -59,18 +59,18 @@ listen conn cx state =
            WS.Binary bs -> return $ MsgBin bs
        case msg of
          MsgTxt "PING" -> WS.sendTextData conn ("PONG"::T.Text)
-         _ -> do reply <- runN2O (protoRun msg cx) state
+         _ -> do reply <- runN2O (protoRun msg) state
                  process conn reply
      `finally` do
-    runN2O (protoRun MsgTerminate cx) state
+    runN2O (protoRun MsgTerminate) state
     return ()
 
 process conn reply =
   case reply of
-   (Reply (MsgBin msg), state) -> WS.sendBinaryData conn msg
+   Reply (MsgBin msg) -> WS.sendBinaryData conn msg
    _ -> error "Unknown response type"
 
-receiveN2O conn cx state = do
+receiveN2O conn state = do
   message <- WS.receiveDataMessage conn
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
@@ -78,7 +78,7 @@ receiveN2O conn cx state = do
     WS.Text bs _ ->
       case LC8.stripPrefix "N2O," bs of
         Just pid -> do
-          reply <- runN2O (protoRun (MsgInit pid) cx) state
+          reply <- runN2O (protoRun (MsgInit pid)) state
           process conn reply
           return pid
         _ -> error "Protocol violation"

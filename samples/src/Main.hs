@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedLists, OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies, OverloadedLists, OverloadedStrings, FlexibleContexts #-}
 module Main (main) where
 
 import Network.N2O
@@ -6,23 +6,27 @@ import Network.N2O.Util
 import Network.N2O.WebSockets
 import Network.N2O.Http
 import Network.N2O.Protocols
-import Data.BERT
-import qualified Data.Binary as B
-import qualified Data.ByteString.Lazy as L
+import Network.N2O.Nitro
+import Debug.Trace
 
-main = runServer "localhost" 3000 (createCx router)
+data Example = Greet deriving (Show, Eq, Read)
 
-data Example = Greet L.ByteString deriving (Show, Eq)
-instance Bert Example where
-  readBert (TupleTerm [AtomTerm "greet", BytelistTerm name]) = Just $ Greet name
-  readBert _ = Nothing
+main = runServer "localhost" 3000 cx
 
---router :: Cx (N2OProto Example) L.ByteString -> Cx (N2OProto Example) L.ByteString
-router cx = cx{ cxEvHnd = event } -- we have single (index) page only
+cx = createCx router
 
-event (N2ONitro nitro) = handleNitro nitro -- ^ handle system messages
-event (N2OClient client) = handleClient client -- ^ handle client messages
-handleNitro (Init _) =
-  return "qi('system').innerText='What is your name?'"
-handleClient(Client (Greet name)) =
+router cx@Cx{cxReq=Req{reqPath=path}} =
+  let handler = case path of
+                  "/ws/samples/static/index.html" -> index
+                  "/ws/samples/static/about.html" -> about
+                  _ -> index
+  in traceShow path cx{cxHandler=handler}
+
+index Init = do
+  ev <- renderEvent Event{eventTarget="send",eventPostback=Greet,eventType="click",eventSource=["name"]}
+  return $ "qi('system').innerText='What is your name?';" <> ev
+index (Message Greet) = do
+  Just name <- get "name" -- wf:q/1
   return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+about Init = do
+  return $ "qi('app').innerText='This is the N2O Hello World App'"

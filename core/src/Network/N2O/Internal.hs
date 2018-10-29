@@ -1,7 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 module Network.N2O.Internal where
 
 import Data.BERT
+import Data.IORef
+import qualified Data.Map.Strict as M
 import qualified Data.Binary as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -24,26 +26,36 @@ decodeBert _ = Nothing
 
 mkCx = Cx
   { cxReq = undefined
-  , cxEvHnd = undefined
-  , cxHandlers = []
+  , cxHandler = undefined
+  , cxMiddleware = []
+  , cxDePickle = undefined
+  , cxPickle = undefined
   , cxProtos = []
-  , cxEncode = undefined
-  , cxDecode = undefined
+  , cxEncoder = undefined
+  , cxDecoder = undefined
+  , cxState = M.empty
   }
 
 mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [] }
 
-nop :: Cx a b -> (Rslt, Cx a b)
-nop cx = (Reply (MsgBin BSL.empty), cx)
+nop :: Rslt
+nop = Reply (MsgBin BSL.empty)
 
-protoRun :: Msg -> Cx a b -> N2O (Rslt, Cx a b)
-protoRun msg cx = go [] msg cx (cxProtos cx)
+protoRun :: forall f a b. Msg -> N2O f a b Rslt
+protoRun msg = do
+    ref <- ask
+    cx@Cx{cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
+    go [] msg protos decode
   where
-    go :: [(Rslt, Cx a b)] -> Msg -> Cx a b -> [Proto a b] -> N2O (Rslt, Cx a b)
-    go _ _ state [] = return $ nop state
-    go acc msg state (proto:protos) = do
-        res <- protoInfo proto msg state
-        case res of
-            (Unknown , _) -> go acc msg state protos
-            (Reply msg1, state1) -> return $ (Reply msg1, state1)
-            a -> go (a:acc) msg state protos
+--    go :: [Rslt] -> Msg -> [Proto f a b] -> N2O f a b Rslt
+    go _ _ [] _ = return $ nop
+    go acc msg (proto:protos) decoder = do
+      let mbDecoded = decoder msg
+      case mbDecoded of
+        Just decoded -> do
+          res <- protoInfo proto decoded
+          case res of
+            Unknown -> go acc msg protos decoder
+            Reply msg1 -> return $ Reply msg1
+            a -> go (a:acc) msg protos decoder
+        _ -> go acc msg protos decoder

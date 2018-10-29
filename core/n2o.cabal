@@ -23,6 +23,7 @@ library
                 , Network.N2O.Internal
                 , Network.N2O.Util
                 , Network.N2O.Protocols
+                , Network.N2O.Nitro
   other-modules:
       Paths_n2o
   hs-source-dirs:
@@ -34,6 +35,8 @@ library
                , bert
                , stm
                , containers
+               , base64-bytestring
+               , fmt
   default-language: Haskell2010
 
 test-suite n2o-test

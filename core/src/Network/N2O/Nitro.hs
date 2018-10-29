@@ -4,19 +4,22 @@
 module Network.N2O.Nitro where
 
 import qualified Data.ByteString             as BS
-import           Data.ByteString.Base64.Lazy (decode, encode)
 import qualified Data.ByteString.Lazy        as BL
 import qualified Data.ByteString.Lazy.Char8  as C8
 import           Data.Char                   (toLower)
 import           Data.List                   (intersperse)
 import           Data.String
 import qualified Data.Text                   as T
+import Data.Text.Lazy.Encoding
+import Data.IORef
 import           Fmt
 import           Fmt.Internal.Core
 import           Prelude                     hiding (id)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (forM_)
+import Network.N2O.Types
 
+{-
 type Action = T.Text
 
 data Element
@@ -30,37 +33,36 @@ data Element
             }
   | Text T.Text
   deriving (Show)
+-}
 
 -- data EventType = Click deriving (Show)
-data Event = Event
+data Event a = Event
   { eventTarget   :: String
-  , eventPostback :: String
+  , eventPostback :: a
   , eventType     :: String
   , eventSource   :: [String]
   } deriving (Show)
 
-class (MonadIO m) => Nitro m where
-  wire :: Action -> m () -- wire an action
-  actions :: m [Action] -- get actions
-  clear :: m () -- clear actions
-
-renderEvent :: (Monad m) => Event -> m Action
-renderEvent Event {..} =
-      case eventPostback of
-        "" -> return ""
-        pb ->
-          return $
+renderEvent :: Event a -> N2O f a b BL.ByteString
+renderEvent Event {..} = do
+    ref <- ask
+    cx@Cx{cxPickle=pickle} <- lift $ readIORef ref
+    case eventSource of
+      [] -> return BL.empty
+      src -> return $ encodeUtf8 $
             "{ var x=qi('" +| eventTarget |+ "'); x && x.addEventListener('"
-            +| eventType |+ "',function(event){ if (validateSources(["
+            +| eventType |+ "',function(event){ if (validateSources("
             +| (strJoin $ map (\x -> "'" ++ x ++  "'") eventSource) |+
-            "])) { ws.send(data('" +| pb |+"',["
-            +| (strJoin $ map renderSource eventSource) |+
-            "])); } else console.log('Validation error'); })};"
+            ")) { ws.send(enc(tuple(atom('pickle'),bin('" +| eventTarget |+ "'),bin('"
+            +| (decodeUtf8 $ pickle eventPostback) |+ "'),"
+            +| (strJoin $ map renderSource src) |+
+            "))); } else console.log('Validation error'); })}"
   where
-    renderSource s = "querySource2('" +| s |+"')"
-    strJoin [] = ""
-    strJoin l  = (concat $ intersperse "," l)
+    renderSource s = "tuple(atom('" +| s |+ "'),querySource('" +| s |+"'))"
+    strJoin [] = "[]"
+    strJoin l  = "[" ++ (concat $ intersperse "," l) ++ "]"
 
+{-
 renderElements :: Nitro m => [Element] -> m Action
 renderElements []     = return ""
 renderElements (x:xs) = do
@@ -133,14 +135,4 @@ insertBottom target elem = do
   clear
   wire $ T.pack action
   forM_ acs wire
-
-event =
-  Event
-    { eventTarget = ""
-    , eventPostback = ""
-    , eventType = undefined
-    , eventSource = []
-    }
-
-click = event {eventType = "click"}
-
+-}
