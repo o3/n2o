@@ -41,7 +41,6 @@ nitroInfo message = do
   lift $ putStrLn ("NITRO : " ++ show message)
   case message of
     msg@(N2ONitro (I pid)) -> do
---      lift $ print msg
       reply <- handle Init
       return $ Reply (encode reply)
     msg@(N2ONitro (P _source pickled linked)) -> do
