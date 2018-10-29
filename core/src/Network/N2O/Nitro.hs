@@ -49,10 +49,10 @@ data Event a = Event
   } deriving (Show, Generic)
 instance (B.Binary a) => B.Binary (Event a)
 
-wire :: forall bin f a b. (B.Binary bin) => Action bin -> N2O f a b BL.ByteString
+wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString
 wire a = do
   mbActions <- get "actions"
-  let (actions :: [Action bin]) = case mbActions of
+  let (actions :: [Action a]) = case mbActions of
                   Just actions -> actions
                   _ -> []
   put "actions" (a:actions)

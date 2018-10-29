@@ -25,10 +25,10 @@ router cx@Cx{cxReq=Req{reqPath=path}} =
   in traceShow path cx{cxHandler=handler}
 
 index Init = do
-  wire (ARaw "qi('system').innerText='What is your name?'" :: Action Example)
+  wire (ARaw "qi('system').innerText='What is your name?'")
   wire $ AEvent Event{eventTarget="send",eventPostback=Greet,eventType="click",eventSource=["name"]}
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
-  wire (ARaw ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'") :: Action Example)
+  wire (ARaw ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"))
 about Init = do
-  wire (ARaw "qi('app').innerText='This is the N2O Hello World App'" :: Action Example)
+  wire (ARaw "qi('app').innerText='This is the N2O Hello World App'")
