@@ -28,7 +28,7 @@
 
 <h3>INTRO</h3>
 
-<p></p>
+<p>The <b>Network.N2O.Types</b> module contains context definition, state and N2O monad.</p>
 
     </section>
 
@@ -52,12 +52,21 @@
 
 </code></figure>
 
+    </section>
     <section>
-
 <h3>STATE</h3>
 
 <figure><figcaption>Listing 2. N2O State</figcaption><code>
   type N2OState (f :: * -> *) (a :: *) (b :: *) = IORef (Cx f a b)
+
+</code></figure>
+
+    </section>
+
+    <section>
+<h3>MONAD</h3>
+
+<figure><figcaption>Listing 2. N2O Monad</figcaption><code>
   type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
   newtype N2OM state m a = N2OM { runN2O :: state -> m a }
 
@@ -67,7 +76,6 @@
 <h4>ask :: (Monad m) => N2OM state m state</h4>
 <h4>put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a b ()</h4>
 <h4>get :: (B.Binary bin) => BS.ByteString -> N2O f a b (Maybe bin)</h4>
-    </section>
 
     <section>
 

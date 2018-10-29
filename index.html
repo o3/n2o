@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>N2O.HS</title>
+    <title>N2O HS</title>
     <link rel="stylesheet" href="https://synrc.space/synrc.css" />
 </head>
 
@@ -19,7 +19,7 @@
 
 <header>
     <a href="https://n2o.space"><img src="https://synrc.space/images/Synrc Neo.svg?v=1"></a>
-    <h1>N2O.HS</h1>
+    <h1>N2O HS</h1>
 </header>
 
 <aside>
@@ -27,19 +27,21 @@
         <section>
             <h3>Motivation</h3>
             <div>
-                Introduce N2O Protocols for Haskell programming language.
-                Create a single N2O Ecosystem for Enterprise Protocol Federation
-                and establish a solid CORBA/WS-SOAP/XMPP-replacement, ready for high-speed,
-                low-latency IoT applications.
+                This project introduces N2O Protocols for Haskell programming language.
+                The aim is to be compatible on transport level with Erlang version of N2O.
+                This ecosystem represents a solid CORBA/WS-SOAP/XMPP-replacement,
+                ready for high-speed, low-latency IoT and WebSocket applications.
             </div>
         </section>
 
         <section>
             <a name=plugin><h3>MANUAL</h3></a>
             <div><ul>
-           <li><a href="man/internal.htm">INTERNAL</a></font></li>
-           <li><a href="man/protocols.htm">PROTOCOLS</a></font></li>
-           <li><a href="man/types.htm">TYPES</a></font></li>
+            <li><a href="man/types.htm">Network.N2O.Types</a></font></li>
+            <li><a href="man/internal.htm">Network.N2O.Internal</a></font></li>
+            <li><a href="man/protocols.htm">Network.N2O.Protocols</a></font></li>
+            <li><a href="man/nitro.htm">Network.N2O.Nitro</a></font></li>
+            <li><a href="man/network.htm">Network.N2O</a></font></li>
             </ul></div>
             <br>
             <div>
@@ -52,12 +54,10 @@
 <main>
     <section>
 
-        <h3>Idiomatic N2O Haskell</h3>
-        <p>
-            Starting from 4.5, <a href="https://n2o.space">N2O</a> reduces everything that duplicates MQTT features.
-            On the other hand, MQTT version is a completely N2O-compatible embeddable protocol relay
-            with limited features. And it takes only 25KB in Erlang.
-        </p>
+        <h3>N2O Haskell</h3>
+
+        <p>The philosophy behind N2O is to be simple, clean and pure.
+           The core of N2O is 500 LOC.</p>
 
         <figure>
             <figcaption>Listing 2. N2O Context Setup</figcaption>
@@ -75,21 +75,22 @@
         </code></figure>
 
         <figure>
-            <figcaption>Listing 3. NITRO Protocol Event Handler</figcaption>
+            <figcaption>Listing 3. NITRO Web Protocol</figcaption>
         <code>
     index Init = do
-      ev <- renderEvent Event{ eventTarget   = "send",
-                               eventPostback = Greet,
-                               eventType     = "click",
-                               eventSource   = ["name"] }
-      return $ "qi('system').innerText='What is your name?';" <> ev
+      wire (ARaw "qi('system').innerText='What is your name?'")
+      wire $ AEvent Event { eventTarget   = "send"
+                          , eventPostback = Greet
+                          , eventType     = "click"
+                          , eventSource   = [ "name" ]
+                          }
 
     index (Message Greet) = do
-      Just name <- get "name" -- wf:q/1
-      return $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+      Just name <- get "name"
+      wire (ARaw ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"))
 
     about Init = do
-      return $ "qi('app').innerText='This is the N2O Hello World App'"
+      wire (ARaw "qi('app').innerText='This is the N2O Hello World App'")
         </code></figure>
     </section>
 
@@ -97,6 +98,11 @@
         <a name=plugin><h3>Related Documents</h3></a>
         <div>
         <ul>
+         <a href="man/network.htm">NETWORK</a></b>,
+         <a href="man/types.htm">TYPES</a></b>,
+         <a href="man/internal.htm">INTERNAL</a></b>,
+         <a href="man/protocols.htm">PROTOCOLS</a></b>,
+         <a href="man/nitro.htm">NITRO</a></b>.
         </ul></div>
     </section>
 </main>
