@@ -50,7 +50,6 @@ nitroInfo message = do
           reply <- handle (Message x)
           return $ Reply (encode reply)
         _ -> return Unknown
-    _ -> return Unknown
 
 createCx router = mkCx
   { cxMiddleware = [router]
