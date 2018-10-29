@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric, ScopedTypeVariables #-}
 
 module Network.N2O.Nitro where
 
@@ -11,6 +10,7 @@ import           Data.List                   (intersperse)
 import           Data.String
 import qualified Data.Text                   as T
 import Data.Text.Lazy.Encoding
+import Data.Map.Strict ((!?))
 import Data.IORef
 import           Fmt
 import           Fmt.Internal.Core
@@ -18,6 +18,8 @@ import           Prelude                     hiding (id)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (forM_)
 import Network.N2O.Types
+import GHC.Generics (Generic)
+import qualified Data.Binary as B
 
 {-
 type Action = T.Text
@@ -35,13 +37,37 @@ data Element
   deriving (Show)
 -}
 
+data Action a = AEvent (Event a) | ARaw BL.ByteString deriving (Show, Generic)
+instance (B.Binary a) => B.Binary (Action a)
+
 -- data EventType = Click deriving (Show)
 data Event a = Event
   { eventTarget   :: String
   , eventPostback :: a
   , eventType     :: String
   , eventSource   :: [String]
-  } deriving (Show)
+  } deriving (Show, Generic)
+instance (B.Binary a) => B.Binary (Event a)
+
+wire :: forall bin f a b. (B.Binary bin) => Action bin -> N2O f a b BL.ByteString
+wire a = do
+  mbActions <- get "actions"
+  let (actions :: [Action bin]) = case mbActions of
+                  Just actions -> actions
+                  _ -> []
+  put "actions" (a:actions)
+  return ""
+
+renderActions :: [Action a] -> N2O f a b BL.ByteString
+renderActions [] = return ""
+renderActions (a:as) = do
+  r <- renderAction a
+  rs <- renderActions as
+  return (r <> ";" <> rs)
+
+renderAction :: Action a -> N2O f a b BL.ByteString
+renderAction (ARaw bs) = return bs
+renderAction (AEvent ev) = renderEvent ev
 
 renderEvent :: Event a -> N2O f a b BL.ByteString
 renderEvent Event {..} = do

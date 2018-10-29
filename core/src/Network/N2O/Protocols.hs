@@ -1,7 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Network.N2O.Protocols where
 
 import Network.N2O.Types
 import Network.N2O.Internal
+import Network.N2O.Nitro
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Char8 as C8
@@ -31,25 +33,35 @@ readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, L
     convert (TupleTerm [AtomTerm k, BytelistTerm v] : vs) = M.insert (C8.pack k) v (convert vs)
 readBert _ = Nothing
 
-nitroProto :: (Show a) => Proto N2OProto a L.ByteString
+nitroProto :: (Show a, B.Binary a) => Proto N2OProto a L.ByteString
 nitroProto = Proto { protoInfo = nitroInfo }
 
-nitroInfo :: (Show a) => N2OProto a -> N2O N2OProto a L.ByteString Rslt
+nitroInfo :: forall a. (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a L.ByteString Rslt
 nitroInfo message = do
   ref <- ask
   cx@Cx{cxHandler=handle,cxEncoder=encode,cxDePickle=dePickle} <- lift $ readIORef ref
   lift $ putStrLn ("NITRO : " ++ show message)
   case message of
     msg@(N2ONitro (I pid)) -> do
-      reply <- handle Init
-      return $ Reply (encode reply)
+      handle Init
+      flushActions encode
     msg@(N2ONitro (P _source pickled linked)) -> do
       forM_ (M.toList linked) (\(k,v) -> put k v)
       case dePickle pickled of
         Just x -> do
-          reply <- handle (Message x)
-          return $ Reply (encode reply)
+          handle (Message x)
+          flushActions encode
         _ -> return Unknown
+  where
+    flushActions encode = do
+      mbActions <- get $ C8.pack "actions"
+      res <- case mbActions of
+        Just actions -> do
+          reply <- renderActions actions
+          return $ Reply (encode reply)
+        _ -> return $ nop
+      put (C8.pack "actions") ([]::[Action a])
+      return res
 
 createCx router = mkCx
   { cxMiddleware = [router]
