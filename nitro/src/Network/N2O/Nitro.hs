@@ -17,7 +17,7 @@ import           Fmt
 import           Fmt.Internal.Core
 import           Prelude                     hiding (id)
 import Control.Monad (forM_, void)
-import Network.N2O.Types
+import Network.N2O hiding (Event)
 import GHC.Generics (Generic)
 import qualified Data.Binary as B
 import Numeric (showHex)
@@ -112,7 +112,7 @@ renderElement Element {..} = do
 renderEvent :: Event a -> N2O f a b BL.ByteString
 renderEvent Event {..} = do
     ref <- ask
-    cx@Cx{cxPickle=pickle} <- lift $ readIORef ref
+    cx@Context{cxPickle=pickle} <- lift $ readIORef ref
     case eventSource of
       [] -> return BL.empty
       src -> return $ encodeUtf8 $

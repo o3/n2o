@@ -18,12 +18,12 @@ import qualified Network.WebSockets.Stream      as WSStream
 import           Data.IORef
 import qualified Data.Map.Strict                as M
 
-wsApp :: Cx f a b -> WS.ServerApp
+wsApp :: Context f a b -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
-      cx1 = cx{cxReq = mkReq {reqPath = path}}
+      cx1 = cx {cxReq = mkReq {reqPath = path}}
       handlers = cxMiddleware cx1
-      applyHandlers = \hs ctx ->
+      applyHandlers hs ctx =
         case hs of
           [] -> ctx
           (h:hs') -> applyHandlers hs' (h ctx)
@@ -48,26 +48,26 @@ mkPending opts sock req = do
     , WSConn.pendingStream = stream
     }
 
-listen :: WS.Connection -> N2OState f a b -> IO ()
+listen :: WS.Connection -> State f a b -> IO ()
 listen conn state =
   do pid <- receiveN2O conn state
      forever $ do
        message <- WS.receiveDataMessage conn
        msg <-
          case message of
-           WS.Text t _ -> return $ MsgTxt $ decodeUtf8 t
-           WS.Binary bs -> return $ MsgBin bs
+           WS.Text t _ -> return $ TextMessage $ decodeUtf8 t
+           WS.Binary bs -> return $ BinaryMessage bs
        case msg of
-         MsgTxt "PING" -> WS.sendTextData conn ("PONG"::T.Text)
+         TextMessage "PING" -> WS.sendTextData conn ("PONG"::T.Text)
          _ -> do reply <- runN2O (protoRun msg) state
                  process conn reply
      `finally` do
-    runN2O (protoRun MsgTerminate) state
+    runN2O (protoRun TerminateMessage) state
     return ()
 
 process conn reply =
   case reply of
-   Reply (MsgBin msg) -> WS.sendBinaryData conn msg
+   Reply (BinaryMessage msg) -> WS.sendBinaryData conn msg
    _ -> error "Unknown response type"
 
 receiveN2O conn state = do
@@ -78,7 +78,7 @@ receiveN2O conn state = do
     WS.Text bs _ ->
       case LC8.stripPrefix "N2O," bs of
         Just pid -> do
-          reply <- runN2O (protoRun (MsgInit pid)) state
+          reply <- runN2O (protoRun (InitMessage pid)) state
           process conn reply
           return pid
         _ -> error "Protocol violation"

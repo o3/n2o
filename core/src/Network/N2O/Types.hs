@@ -8,8 +8,10 @@ import Data.IORef
 import qualified Data.Binary as B
 import Data.Map.Strict (Map, insert, (!?))
 
+-- | An HTTP header
 type Header = (BS.ByteString, BS.ByteString)
 
+-- | An HTTP request
 data Req = Req
   { reqPath :: BS.ByteString
   , reqMeth :: BS.ByteString
@@ -17,10 +19,16 @@ data Req = Req
   , reqHead :: [Header]
   }
 
-data Cx (f :: * -> *) (a :: *) (b :: *) = Cx
-  { cxHandler :: W a -> N2O f a b b
+-- | The N2O context data type
+-- This is the key data type of the N2O.
+data Context
+  (f :: * -> *)  -- ^ type constructor for the input of the protocol handler
+  (a :: *)       -- ^ the base type for the event handler's return type
+  (b :: *)       -- ^ output type of the event handler
+  = Context
+  { cxHandler :: Event a -> N2O f a b b
   , cxReq :: Req
-  , cxMiddleware :: [Cx f a b -> Cx f a b]
+  , cxMiddleware :: [Context f a b -> Context f a b]
   , cxDePickle :: BL.ByteString -> Maybe a
   , cxPickle :: a -> BL.ByteString
   , cxProtos :: [Proto f a b]
@@ -28,17 +36,21 @@ data Cx (f :: * -> *) (a :: *) (b :: *) = Cx
   , cxDecoder :: Decoder (f a)
   , cxState :: Map BS.ByteString BL.ByteString
   }
-type N2OState (f :: * -> *) (a :: *) (b :: *) = IORef (Cx f a b)
-type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
 
--- | Lightweight version of ReaderT from @transformers@ package
+-- | Local mutable state
+type State f a b = IORef (Context f a b)
+
+-- | 'N2OM' over 'IO' with 'N2OState' as env
+type N2O f a b = N2OM (State f a b) IO
+
+-- | Lightweight version of @ReaderT@ from @transformers@ package
 newtype N2OM state m a = N2OM { runN2O :: state -> m a }
 
 instance Functor m => Functor (N2OM state m) where
   fmap f (N2OM g) = N2OM (fmap f . g)
 
 instance Applicative m => Applicative (N2OM state m) where
-  pure = lift . pure
+  pure = N2OM . const . pure
   (N2OM f) <*> (N2OM g) = N2OM $ \state -> f state <*> g state
 
 instance Monad m => Monad (N2OM state m) where
@@ -46,36 +58,21 @@ instance Monad m => Monad (N2OM state m) where
     a <- runN2O m state
     runN2O (k a) state
 
-data Msg = MsgTxt TL.Text | MsgBin BL.ByteString | MsgInit BL.ByteString | MsgTerminate deriving (Show, Eq)
+-- | Message datatype, includes text messages, binary messages and some control messages
+data Message = TextMessage TL.Text       | BinaryMessage BL.ByteString
+             | InitMessage BL.ByteString | TerminateMessage
+             deriving (Show, Eq)
 
 -- | Result of the message processing
-data Return = Reply Msg | Ok | Unknown deriving (Show, Eq)
+data Result = Reply Message | Ok | Unknown deriving (Show, Eq)
 
--- | N2O protocol
-newtype Proto (f :: * -> *) (a :: *) (b :: *) =
-  Proto{ protoInfo :: f a -> N2O f a b Return }
+-- | N2O protocol handler
+newtype Proto f a b = Proto { protoInfo :: f a -> N2O f a b Result }
 
-data W a = Init | Message a | Terminate
+-- | Event data type
+data Event a = Init | Message a | Terminate
 
-type Encoder (a :: *) = a -> Msg
-type Decoder (a :: *) = Msg -> Maybe a
-
-lift :: m a -> N2OM state m a
-lift m = N2OM (const m)
-
-ask :: (Monad m) => N2OM state m state
-ask = N2OM return
-
-put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a b ()
-put k v = do
-  state <- ask
-  lift $ modifyIORef state (\cx@Cx{cxState=m} -> cx{cxState=insert k (B.encode v) m})
-
-get :: (B.Binary bin) => BS.ByteString -> N2O f a b (Maybe bin)
-get k = do
-  state <- N2OM return
-  cx <- lift $ readIORef state
-  let mp = cxState cx
-  case mp !? k of
-    Just v -> return $ Just (B.decode v)
-    _ -> return Nothing
+-- | Message encoder. Encode data structure as raw message
+type Encoder a = a -> Message
+-- | Interpret raw message as a data structure
+type Decoder a = Message -> Maybe a
