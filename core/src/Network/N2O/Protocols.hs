@@ -19,11 +19,11 @@ data Nitro a =
    I L.ByteString
  | P { pickleSource  :: L.ByteString
      , picklePickled :: L.ByteString
-     , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
+     , pickleLinked :: M.Map BS.ByteString L.ByteString
      }
  deriving (Show)
 
-data N2OProto a = N2ONitro (Nitro a) deriving (Show)
+newtype N2OProto a = N2ONitro (Nitro a) deriving (Show)
 
 readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (I pid)
 readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
@@ -36,32 +36,35 @@ readBert _ = Nothing
 nitroProto :: (Show a, B.Binary a) => Proto N2OProto a L.ByteString
 nitroProto = Proto { protoInfo = nitroInfo }
 
-nitroInfo :: forall a. (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a L.ByteString Rslt
+nitroInfo :: forall a. (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a L.ByteString Return
 nitroInfo message = do
   ref <- ask
-  cx@Cx{cxHandler=handle,cxEncoder=encode,cxDePickle=dePickle} <- lift $ readIORef ref
+  cx@Cx {cxHandler = handle, cxEncoder = encode, cxDePickle = dePickle} <- lift $ readIORef ref
   lift $ putStrLn ("NITRO : " ++ show message)
   case message of
     msg@(N2ONitro (I pid)) -> do
       handle Init
-      flushActions encode
+      actions <- getActions
+      Reply . encode <$> renderActions' actions
     msg@(N2ONitro (P _source pickled linked)) -> do
-      forM_ (M.toList linked) (\(k,v) -> put k v)
+      forM_ (M.toList linked) (uncurry put)
       case dePickle pickled of
         Just x -> do
           handle (Message x)
-          flushActions encode
+          actions <- getActions
+          Reply . encode <$> renderActions' actions
         _ -> return Unknown
   where
-    flushActions encode = do
-      mbActions <- get $ C8.pack "actions"
-      res <- case mbActions of
-        Just actions -> do
-          reply <- renderActions actions
-          return $ Reply (encode reply)
-        _ -> return $ nop
-      put (C8.pack "actions") ([]::[Action a])
-      return res
+    renderActions' actions =
+      case actions of
+        [] -> return L.empty
+        actions -> do
+          putActions []
+          first <- renderActions actions
+          actions2 <- getActions
+          second <- renderActions actions2
+          putActions []
+          return $ first <> CL8.pack ";" <> second
 
 createCx router = mkCx
   { cxMiddleware = [router]
@@ -90,3 +93,14 @@ defDePickle bs =
   case B64.decode bs of
     Right x -> Just $ read $ CL8.unpack x
     _ -> Nothing
+
+getActions :: (B.Binary a) => N2O f a b [Action a]
+getActions = do
+  mbActions <- get (C8.pack "actions")
+  return $
+    case mbActions of
+           Just actions -> actions
+           _ -> []
+
+putActions :: (B.Binary a) => [Action a] -> N2O f a b ()
+putActions = put (C8.pack "actions")
