@@ -50,8 +50,8 @@
 
         <figure>
         <code>
-  git clone git://github.com/xafizoff/n2o-hs
-  cd n2o-hs
+  git clone git://github.com/xafizoff/n2o
+  cd n2o
   stack build
         </code>
         </figure>
@@ -69,36 +69,36 @@
         <figure>
             <figcaption>Listing 2. N2O Context Setup</figcaption>
         <code>
-    data Example = Greet deriving (Show, Eq, Read)
+  data Example = Greet deriving (Show, Eq, Read)
 
-    main = runServer "localhost" 3000 cx
-    cx = createCx router
-    router cx@Cx{cxReq=Req{reqPath=path}} =
+  main = runServer "localhost" 3000 cx
+  cx = createCx router
+  router cx@Cx{cxReq=Req{reqPath=path}} =
       let handler = case path of
-                      "/ws/samples/static/index.html" -> index
-                      "/ws/samples/static/about.html" -> about
-                      _ -> index
+          "/ws/samples/static/index.html" -> index
+          "/ws/samples/static/about.html" -> about
+                                        _ -> index
       in traceShow path cx{cxHandler=handler}
         </code></figure>
 
         <p>The idea to send prerendered JavaScript events over the
            wire belongs to Rusty Klophaus who made Nitrogen Erlang web framework.
-           Later this was refined by N2O team and now available
+           Later this was refined by N2O team and now is available
            in its purity of Haskell.</p>
 
         <figure>
             <figcaption>Listing 3. NITRO Web Protocol</figcaption>
         <code>
-            index Init = do
-                updateText "system" "What is your name?"
-                wireEl button{id="send", postback=Just Greet, source=["name"]}
+  index Init = do
+      updateText "system" "What is your name?"
+      wireEl button{id="send", postback=Just Greet, source=["name"]}
 
-            index (Message Greet) = do
-                Just name <- get "name" -- wf:q/1
-                updateText "system" ("Hello, " <> jsEscape name <> "!")
+  index (Message Greet) = do
+      Just name <- get "name" -- wf:q/1
+      updateText "system" ("Hello, " <> jsEscape name <> "!")
 
-            about Init =
-                updateText "app" "This is the N2O Hello World App"
+  about Init =
+      updateText "app" "This is the N2O Hello World App"
         </code></figure>
     </section>
 

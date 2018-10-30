@@ -61,6 +61,8 @@
 
 <h4>renderAction :: Action a -> N2O f a b BL.ByteString</h4>
 <h4>wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString</h4>
+<h4>getActions :: (B.Binary a) => N2O f a b [Action a]</h4>
+<h4>putActions :: (B.Binary a) => [Action a] -> N2O f a b ()</h4>
 
     </section>
     <section>
@@ -68,18 +70,27 @@
 <h3>ELEMENT</h3>
 
 <figure><figcaption>Listing 1. Nitro Event</figcaption><code>
-  data Element
-     = Element { name      :: String
-               , id        :: String
-               , body      :: [Element]
-               , postback  :: String
-               , source    :: [String]
-               , noBody    :: Bool
-               , noClosing :: Bool
-               }
-     | Text T.Text deriving (Show)
+  baseElement = Element
+              { id = ""
+              , name = undefined
+              , postback = undefined
+              , body = []
+              , source = []
+              , noBody = False
+              , noClosing = False
+              }
+
+       button = baseElement
+              { name = "button"
+              , source = []
+              }
+
+        panel = baseElement
+              { name = "div" }
 
 </code></figure>
+
+<h4>renderElement :: (B.Binary a) => Element a -> N2O f a b BL.ByteString</h4>
 
     </section>
     <section>
