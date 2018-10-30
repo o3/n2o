@@ -1,27 +1,28 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric,
+  ScopedTypeVariables #-}
 
 module Network.N2O.Nitro where
 
-import qualified Data.ByteString             as BS
-import qualified Data.ByteString.Lazy        as BL
-import qualified Data.ByteString.Char8       as C8
-import qualified Data.ByteString.Lazy.Char8  as CL8
-import Data.Char (toLower, isAlphaNum, ord)
-import           Data.List                   (intercalate)
-import           Data.String
-import qualified Data.Text.Lazy              as TL
-import Data.Text.Lazy.Encoding
-import Data.Map.Strict ((!?))
-import Data.IORef
-import           Fmt
-import           Fmt.Internal.Core
-import           Prelude                     hiding (id)
 import Control.Monad (forM_, void)
-import Network.N2O hiding (Event)
-import GHC.Generics (Generic)
 import qualified Data.Binary as B
-import Numeric (showHex)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.Lazy as B64
+import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as CL8
+import Data.Char (isAlphaNum, ord, toLower)
+import Data.IORef
+import Data.List (intercalate)
+import Data.Map.Strict ((!?))
+import Data.String
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Encoding
+import Fmt
+import Fmt.Internal.Core
+import GHC.Generics (Generic)
+import Network.N2O hiding (Event)
+import Numeric (showHex)
+import Prelude hiding (id)
 
 data Element a
   = Element { name      :: String
@@ -34,13 +35,15 @@ data Element a
             }
   | Text TL.Text
   deriving (Show, Generic)
+
 instance (B.Binary a) => B.Binary (Element a)
 
-data Action a =
-    AEvent (Event a)
+data Action a
+  = AEvent (Event a)
   | AElement (Element a)
   | ARaw BL.ByteString
   deriving (Show, Generic)
+
 instance (B.Binary a) => B.Binary (Action a)
 
 data Event a = Event
@@ -49,18 +52,23 @@ data Event a = Event
   , eventType     :: String
   , eventSource   :: [String]
   } deriving (Show, Generic)
+
 instance (B.Binary a) => B.Binary (Event a)
 
 wireEl :: (B.Binary a) => Element a -> N2O f a BL.ByteString
 wireEl = wire . AElement
 
-wire :: forall f a. (B.Binary a) => Action a -> N2O f a BL.ByteString
+wire ::
+     forall f a. (B.Binary a)
+  => Action a
+  -> N2O f a BL.ByteString
 wire a = do
   mbActions <- get "actions"
-  let (actions :: [Action a]) = case mbActions of
-                  Just actions -> actions
-                  _ -> []
-  put "actions" (a:actions)
+  let (actions :: [Action a]) =
+        case mbActions of
+          Just actions -> actions
+          _ -> []
+  put "actions" (a : actions)
   return ""
 
 renderActions :: forall f a. (B.Binary a) => [Action a] -> N2O f a BL.ByteString
@@ -75,8 +83,8 @@ renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el@Element {..}) = do
   case postback of
-      Nothing -> return ()
-      Just pb -> void (wire $ AEvent Event
+    Nothing -> return ()
+    Just pb -> void (wire $ AEvent Event
         {eventType = "click", eventPostback = pb, eventTarget = id, eventSource = source})
   return ""
 
@@ -98,7 +106,8 @@ renderElement Element {..} = do
     "br" -> return "<br>"
     _ -> do
       content <- renderElements body
-      return $ encodeUtf8 $
+      return $
+        encodeUtf8 $
         if noBody
           then "<" +| name |+ " " +| idProp id |+ "/>"
           else "<" +| name |+ " " +| idProp id |+ ">" +| decodeUtf8 content |+ "</" +| name |+ ">"
@@ -111,11 +120,11 @@ renderElement Element {..} = do
 
 renderEvent :: Event a -> N2O f a BL.ByteString
 renderEvent Event {..} = do
-    ref <- ask
-    cx@Context{cxPickle=pickle} <- lift $ readIORef ref
-    case eventSource of
-      [] -> return BL.empty
-      src -> return $ encodeUtf8 $
+  ref <- ask
+  cx@Context {cxPickle = pickle} <- lift $ readIORef ref
+  case eventSource of
+    [] -> return BL.empty
+    src -> return $ encodeUtf8 $
             "{ var x=qi('" +| eventTarget |+ "'); x && x.addEventListener('"
             +| eventType |+ "',function(event){ if (validateSources("
             +| strJoin (map (\x -> "'" ++ x ++  "'") eventSource) |+
@@ -124,16 +133,16 @@ renderEvent Event {..} = do
             +| strJoin (map renderSource src) |+
             "))); } else console.log('Validation error'); })}"
   where
-    renderSource s = "tuple(atom('" +| s |+ "'),querySource('" +| s |+"'))"
+    renderSource s = "tuple(atom('" +| s |+ "'),querySource('" +| s |+ "'))"
     strJoin [] = "[]"
-    strJoin l  = "[" ++ intercalate "," l ++ "]"
+    strJoin l = "[" ++ intercalate "," l ++ "]"
 
 baseElement :: Element a
 baseElement =
   Element
     { id = ""
     , name = undefined
-    , postback = undefined
+    , postback = Nothing
     , body = []
     , source = []
     , noBody = False
@@ -141,10 +150,9 @@ baseElement =
     }
 
 button :: Element a
-button = baseElement { name = "button"
-                     , source = [] }
+button = baseElement {name = "button", source = []}
 
-panel = baseElement { name = "div" }
+panel = baseElement {name = "div"}
 
 text :: TL.Text -> Element a
 text = Text
@@ -178,11 +186,11 @@ jsEscapeT :: TL.Text -> TL.Text
 jsEscapeT t = TL.pack (escape (TL.unpack t) "")
   where
     escape "" acc = acc
-    escape (x : xs) acc = escape xs $
-      if isAlphaNum x then
-        acc ++ [x]
-      else
-        acc <> "\\x" <> (flip showHex "" . ord $ x)
+    escape (x:xs) acc =
+      escape xs $
+      if isAlphaNum x
+        then acc ++ [x]
+        else acc <> "\\x" <> (flip showHex "" . ord $ x)
 
 jsEscape :: CL8.ByteString -> TL.Text
 jsEscape = jsEscapeT . decodeUtf8
@@ -201,8 +209,8 @@ getActions = do
   mbActions <- get (C8.pack "actions")
   return $
     case mbActions of
-           Just actions -> actions
-           _ -> []
+      Just actions -> actions
+      _ -> []
 
 putActions :: (B.Binary a) => [Action a] -> N2O f a ()
 putActions = put (C8.pack "actions")
