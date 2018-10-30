@@ -13,10 +13,10 @@ import Network.N2O.Types as Types
 import Network.N2O.Nitro
 import Network.N2O.Protocols.Types as Proto
 
-nitroProto :: (Show a, B.Binary a) => Proto N2OProto a L.ByteString
+nitroProto :: (Show a, B.Binary a) => Proto N2OProto a
 nitroProto = Proto { protoInfo = nitroInfo }
 
-nitroInfo :: forall a. (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a L.ByteString Result
+nitroInfo :: (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a Result
 nitroInfo message = do
   ref <- ask
   cx@Context {cxHandler = handle, cxEncoder = encode, cxDePickle = dePickle} <- lift $ readIORef ref

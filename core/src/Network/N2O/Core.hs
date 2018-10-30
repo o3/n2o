@@ -46,7 +46,7 @@ nop :: Result
 nop = Reply (BinaryMessage BSL.empty)
 
 -- | N2O protocol loop
-protoRun :: Message -> N2O f a b Result
+protoRun :: Message -> N2O f a Result
 protoRun msg = do
   ref <- ask
   cx@Context {cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
@@ -73,13 +73,13 @@ ask :: (Monad m) => N2OM state m state
 ask = N2OM return
 
 -- | Put data to the local state
-put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a b ()
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a ()
 put k v = do
   state <- ask
   lift $ modifyIORef state (\cx@Context{cxState=m} -> cx{cxState=insert k (B.encode v) m})
 
 -- | Get data from the local state
-get :: (B.Binary bin) => BS.ByteString -> N2O f a b (Maybe bin)
+get :: (B.Binary bin) => BS.ByteString -> N2O f a (Maybe bin)
 get k = do
   state <- N2OM return
   cx <- lift $ readIORef state

@@ -18,7 +18,7 @@ import qualified Network.WebSockets.Stream      as WSStream
 import           Data.IORef
 import qualified Data.Map.Strict                as M
 
-wsApp :: Context f a b -> WS.ServerApp
+wsApp :: Context f a -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx {cxReq = mkReq {reqPath = path}}
@@ -48,7 +48,7 @@ mkPending opts sock req = do
     , WSConn.pendingStream = stream
     }
 
-listen :: WS.Connection -> State f a b -> IO ()
+listen :: WS.Connection -> State f a -> IO ()
 listen conn state =
   do pid <- receiveN2O conn state
      forever $ do

@@ -23,25 +23,24 @@ data Req = Req
 -- This is the key data type of the N2O.
 data Context
   (f :: * -> *)  -- ^ type constructor for the input of the protocol handler
-  (a :: *)       -- ^ the base type for the event handler's return type
-  (b :: *)       -- ^ output type of the event handler
+  (a :: *)       -- ^ the base type for the event handler's input type
   = Context
-  { cxHandler :: Event a -> N2O f a b b
+  { cxHandler :: Event a -> N2O f a BL.ByteString
   , cxReq :: Req
-  , cxMiddleware :: [Context f a b -> Context f a b]
+  , cxMiddleware :: [Context f a -> Context f a]
   , cxDePickle :: BL.ByteString -> Maybe a
   , cxPickle :: a -> BL.ByteString
-  , cxProtos :: [Proto f a b]
-  , cxEncoder :: Encoder b
+  , cxProtos :: [Proto f a]
+  , cxEncoder :: Encoder BL.ByteString
   , cxDecoder :: Decoder (f a)
   , cxState :: Map BS.ByteString BL.ByteString
   }
 
 -- | Local mutable state
-type State f a b = IORef (Context f a b)
+type State f a = IORef (Context f a)
 
 -- | 'N2OM' over 'IO' with 'N2OState' as env
-type N2O f a b = N2OM (State f a b) IO
+type N2O f a = N2OM (State f a) IO
 
 -- | Lightweight version of @ReaderT@ from @transformers@ package
 newtype N2OM state m a = N2OM { runN2O :: state -> m a }
@@ -67,12 +66,13 @@ data Message = TextMessage TL.Text       | BinaryMessage BL.ByteString
 data Result = Reply Message | Ok | Unknown deriving (Show, Eq)
 
 -- | N2O protocol handler
-newtype Proto f a b = Proto { protoInfo :: f a -> N2O f a b Result }
+newtype Proto f a = Proto { protoInfo :: f a -> N2O f a Result }
 
 -- | Event data type
 data Event a = Init | Message a | Terminate
 
 -- | Message encoder. Encode data structure as raw message
 type Encoder a = a -> Message
+
 -- | Interpret raw message as a data structure
 type Decoder a = Message -> Maybe a
