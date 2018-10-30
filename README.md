@@ -37,6 +37,19 @@ open http://localhost:3000/samples/static/index.html
 Nitro Protocol Demo
 -------------------
 
+### Extensions and imports
+
+```haskell
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+module Main (main) where
+
+import Network.N2O
+import Network.N2O.Web
+import Network.N2O.Protocols hiding (Init)
+import Network.N2O.Nitro
+import Prelude hiding (id)
+```
+
 ### Static Server and Page Router
 
 ```haskell
@@ -49,7 +62,7 @@ Nitro Protocol Demo
           "/ws/samples/static/index.html" -> index
           "/ws/samples/static/about.html" -> about
                                         _ -> index
-      in traceShow path cx{cxHandler=handler}
+      in cx{cxHandler=handler}
 ```
 
 ### Nitro Page Sample
