@@ -1,10 +1,15 @@
-module Network.N2O.Protocols where
+module Network.N2O.Protocols
+ ( module Network.N2O.Protocols.Types
+ , module Network.N2O.Protocols.Nitro
+ , module Network.N2O.Protocols.Client
+ , readBert, createCx, defDecoder, defEncoder) where
 
 import Network.N2O.Types
 import Network.N2O.Core
 import Network.N2O.Nitro
 import Network.N2O.Protocols.Types
 import Network.N2O.Protocols.Nitro
+import Network.N2O.Protocols.Client
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Char8 as C8
