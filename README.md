@@ -2,10 +2,75 @@
 
 [![Build Status](https://travis-ci.org/xafizoff/n2o-hs.svg?branch=master)](https://travis-ci.org/xafizoff/n2o-hs)
 
+Features
+--------
+
+* Endpoints: poor man's WebSocket and static HTTP server
+* Formatters: BERT
+* Protocols: <a href="https://haskell.n2o.space/man/protocols.htm">CLIENT</a>, <a href="https://haskell.n2o.space/man/protocols.htm">NITRO</a>
+* High Performance Protocol Relay
+* Smallest possible codebase — 500 LOC
+
+N2O defined a way we scale protocols, database schema, applications and
+services across companies, formatters, views and presentation layers.
+At the core N2O folds a list of protocols and their handlers providing
+a minimal type-level specification for general purpose application protocol tract.
+
+As example this Haskell version of N2O is shipped with Nitro protocol
+implementation, that listens the tract and push prerendered JavaScript
+events back to the channel. This smart and simple reactive way
+of client-server interaction first was used by Rusty Klophaus in
+his Nitrogen web framework, that was pushed forward since then in
+N2O by Andy Melnikov and Marat Khafizov.
+
 https://haskell.n2o.space
 
-## Run the sample code
+Setup
+-----
 
-1. Execute `stack build && stack exec n2o-sample`
-2. Go to http://localhost:3000/samples/static/index.html
-3. Greet yourself :)
+```sh
+stack build
+stack exec n2o-sample
+open http://localhost:3000/samples/static/index.html
+```
+
+Nitro Protocol Demo
+-------------------
+
+### Static Server and Page Router
+
+```
+  data Example = Greet deriving (Show, Eq, Read)
+
+  main = runServer "localhost" 3000 cx
+  cx = createCx router
+  router cx@Cx{cxReq=Req{reqPath=path}} =
+      let handler = case path of
+          "/ws/samples/static/index.html" -> index
+          "/ws/samples/static/about.html" -> about
+                                        _ -> index
+      in traceShow path cx{cxHandler=handler}
+```
+
+### Nitro Page Sample
+
+```
+  index Init = do
+      updateText "system" "What is your name?"
+      wireEl button{id="send", postback=Just Greet, source=["name"]}
+
+  index (Message Greet) = do
+      Just name <- get "name" -- wf:q/1
+      updateText "system" ("Hello, " <> jsEscape name <> "!")
+
+  about Init =
+      updateText "app" "This is the N2O Hello World App"
+```
+
+Credits
+-------
+
+* Andy Melnikov
+* Marat Khafizov
+* Maxim Sokhatsky
+
