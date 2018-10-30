@@ -7,19 +7,18 @@
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
     <title>NITRO</title>
-    <link rel="stylesheet" href="https://synrc.space/synrc.css" />
+    <link rel="stylesheet" href="../haskell.css" />
 </head>
 
 <body>
 
 <nav>
-    <!--a href='https://synrc.space/'>SYNRC</a-->
     <a href='https://n2o.space'>N2O</a>
     <a href='https://haskell.n2o.space'>HASKELL</a>
 </nav>
 
 <header>
-    <a href="../index.html"><img src="https://n2o.space/img/Synrc Neo.svg"></a>
+    <a href="../index.html"><img src="../Synrc Neo.svg"></a>
     <h1>NITRO</h1>
 </header>
 
@@ -62,6 +61,7 @@
 
 <h4>renderAction :: Action a -> N2O f a b BL.ByteString</h4>
 <h4>wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString</h4>
+<h4>wireEl :: (B.Binary a) => Element a -> N2O f a b BL.ByteString</h4>
 <h4>getActions :: (B.Binary a) => N2O f a b [Action a]</h4>
 <h4>putActions :: (B.Binary a) => [Action a] -> N2O f a b ()</h4>
 
@@ -105,7 +105,7 @@
 </main>
 
 <footer>
-    Made with <span class="heart">❤</span> for Haskell and N2O
+    Made with <span class="heart">❤</span> to Haskell and N2O
 </footer>
 
 </body>
