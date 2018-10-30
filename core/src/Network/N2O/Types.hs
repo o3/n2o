@@ -20,13 +20,11 @@ data Req = Req
   }
 
 -- | The N2O context data type
--- This is the key data type of the N2O.
-data Context
-  (f :: * -> *)
-     -- ^ type constructor for the input of the protocol handler
-  (a :: *)
-     -- ^ the base type for the event handler's input type
-  = Context
+-- This is the key data type of the N2O. @(f :: * -> *)@ - type constructor
+-- for the protocol handler's input type. @(a :: *)@ - base type for the
+-- event handler's input type. I.e. @(f a)@ gives input type for the
+-- protocol handler. @(Event a)@ gives input type for the event handler.
+data Context (f :: * -> *) (a :: *) = Context
   { cxHandler :: Event a -> N2O f a BL.ByteString
   , cxReq :: Req
   , cxMiddleware :: [Context f a -> Context f a]
