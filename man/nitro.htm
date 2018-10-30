@@ -62,6 +62,7 @@
 
 <h4>renderAction :: Action a -> N2O f a b BL.ByteString</h4>
 <h4>wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString</h4>
+<h4>wireEl :: (B.Binary a) => Element a -> N2O f a b BL.ByteString</h4>
 <h4>getActions :: (B.Binary a) => N2O f a b [Action a]</h4>
 <h4>putActions :: (B.Binary a) => [Action a] -> N2O f a b ()</h4>
 
