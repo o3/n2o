@@ -31,5 +31,6 @@ library
                , bert
                , fmt
                , containers
+               , base64-bytestring
   default-language: Haskell2010
 

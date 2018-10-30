@@ -18,6 +18,8 @@ source-repository head
 
 library
   exposed-modules: Network.N2O.Protocols
+                 , Network.N2O.Protocols.Types
+                 , Network.N2O.Protocols.Nitro
   other-modules:
       Paths_n2o_protocols
   hs-source-dirs:
