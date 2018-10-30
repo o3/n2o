@@ -29,23 +29,24 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
-runServer :: String -> Int -> Cx f a b -> IO ()
-runServer host port cx = withSocketsDo $ do
-    addr <- resolve host (show $ port)
+runServer :: String -> Int -> Context f a -> IO ()
+runServer host port cx =
+  withSocketsDo $ do
+    addr <- resolve host (show port)
     bracket (open addr) close (acceptConnections HttpConf cx)
   where
     resolve host port = do
-        let hints = defaultHints { addrSocketType = Stream, addrFlags = [AI_PASSIVE] }
-        addr:_ <- getAddrInfo (Just hints) (Just host) (Just port)
-        return addr
+      let hints = defaultHints {addrSocketType = Stream, addrFlags = [AI_PASSIVE]}
+      addr:_ <- getAddrInfo (Just hints) (Just host) (Just port)
+      return addr
     open addr = do
-        sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-        setSocketOption sock ReuseAddr 1
-        bind sock (addrAddress addr)
-        listen sock 10
-        return sock
+      sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+      setSocketOption sock ReuseAddr 1
+      bind sock (addrAddress addr)
+      listen sock 10
+      return sock
 
-acceptConnections :: HttpConf -> Cx f a b -> Socket -> IO ()
+acceptConnections :: HttpConf -> Context f a -> Socket -> IO ()
 acceptConnections conf cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -53,20 +54,18 @@ acceptConnections conf cx sock = do
             (\e@(SomeException _) -> print e))
   acceptConnections conf cx sock
 
-talk :: HttpConf -> Cx f a b -> Socket -> SockAddr -> IO ()
+talk :: HttpConf -> Context f a -> Socket -> SockAddr -> IO ()
 talk conf cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
   case either of
     Left resp -> sendResp conf sock resp
-    Right req -> do
-      if needUpgrade req then do
-            -- make pending ws request
-            pending <- mkPending WS.defaultConnectionOptions sock req
-            -- n2o stream app
-            wsApp cx{cxReq = req} pending
-         else do
-           fileResp (preparePath $ C.unpack $ reqPath req) (sendResp conf sock)
+    Right req ->
+      if needUpgrade req
+        then do
+          pending <- mkPending WS.defaultConnectionOptions sock req
+          wsApp cx {cxReq = req} pending
+        else fileResp (preparePath $ C.unpack $ reqPath req) (sendResp conf sock)
   where
     preparePath ('/':path) = path
     preparePath path = path
@@ -81,9 +80,9 @@ status = \case
 calcLen resp@Resp{..} = (C.pack "Content-Length", C.pack $ show $ BS.length respBody) : respHead
 
 sendResp :: HttpConf -> Socket -> Resp -> IO ()
-sendResp conf sock resp@Resp{..} = do
-  let headers = fmap (\(k,v) -> k <> (C.pack ": ") <> v <> (C.pack "\r\n")) (calcLen resp)
-      cmd = (C.pack "HTTP/1.1 ") <> (C.pack $ show respCode) <> (C.pack " ") <> (C.pack $ status respCode) <> (C.pack "\r\n")
+sendResp conf sock resp@Resp {..} = do
+  let headers = fmap (\(k, v) -> k <> C.pack ": " <> v <> C.pack "\r\n") (calcLen resp)
+      cmd = C.pack "HTTP/1.1 " <> C.pack (show respCode) <> C.pack " " <> C.pack (status respCode) <> C.pack "\r\n"
       x = cmd : headers
       y = x ++ [C.pack "\r\n", respBody]
   send sock (mconcat y)

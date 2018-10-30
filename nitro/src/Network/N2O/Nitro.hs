@@ -17,7 +17,7 @@ import           Fmt
 import           Fmt.Internal.Core
 import           Prelude                     hiding (id)
 import Control.Monad (forM_, void)
-import Network.N2O.Types
+import Network.N2O hiding (Event)
 import GHC.Generics (Generic)
 import qualified Data.Binary as B
 import Numeric (showHex)
@@ -51,10 +51,10 @@ data Event a = Event
   } deriving (Show, Generic)
 instance (B.Binary a) => B.Binary (Event a)
 
-wireEl :: (B.Binary a) => Element a -> N2O f a b BL.ByteString
+wireEl :: (B.Binary a) => Element a -> N2O f a BL.ByteString
 wireEl = wire . AElement
 
-wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString
+wire :: forall f a. (B.Binary a) => Action a -> N2O f a BL.ByteString
 wire a = do
   mbActions <- get "actions"
   let (actions :: [Action a]) = case mbActions of
@@ -63,14 +63,14 @@ wire a = do
   put "actions" (a:actions)
   return ""
 
-renderActions :: forall f a b. (B.Binary a) => [Action a] -> N2O f a b BL.ByteString
+renderActions :: forall f a. (B.Binary a) => [Action a] -> N2O f a BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
   rs <- renderActions as
   return (r <> ";" <> rs)
 
-renderAction :: (B.Binary a) => Action a -> N2O f a b BL.ByteString
+renderAction :: (B.Binary a) => Action a -> N2O f a BL.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el@Element {..}) = do
@@ -80,14 +80,14 @@ renderAction (AElement el@Element {..}) = do
         {eventType = "click", eventPostback = pb, eventTarget = id, eventSource = source})
   return ""
 
-renderElements :: (B.Binary a) => [Element a] -> N2O f a b BL.ByteString
+renderElements :: (B.Binary a) => [Element a] -> N2O f a BL.ByteString
 renderElements [] = return ""
 renderElements (e:es) = do
   r <- renderElement e
   rs <- renderElements es
   return (r <> rs)
 
-renderElement :: (B.Binary a) => Element a -> N2O f a b BL.ByteString
+renderElement :: (B.Binary a) => Element a -> N2O f a BL.ByteString
 renderElement (Text t) = return $ encodeUtf8 t
 renderElement Element {..} = do
   case postback of
@@ -109,10 +109,10 @@ renderElement Element {..} = do
         then ""
         else "id=\"" +| x |+ "\""
 
-renderEvent :: Event a -> N2O f a b BL.ByteString
+renderEvent :: Event a -> N2O f a BL.ByteString
 renderEvent Event {..} = do
     ref <- ask
-    cx@Cx{cxPickle=pickle} <- lift $ readIORef ref
+    cx@Context{cxPickle=pickle} <- lift $ readIORef ref
     case eventSource of
       [] -> return BL.empty
       src -> return $ encodeUtf8 $
@@ -154,10 +154,10 @@ br = baseElement {name = "br", noBody = True, noClosing = True}
 textbox :: Element a
 textbox = baseElement {name = "input type=\"text\"", noBody = True}
 
-alert :: (B.Binary a) => TL.Text -> N2O f a b BL.ByteString
+alert :: (B.Binary a) => TL.Text -> N2O f a BL.ByteString
 alert s = wire (ARaw ("alert('" <> encodeUtf8 s <> "')"))
 
-updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a b BL.ByteString
+updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a BL.ByteString
 updateText target s = wire
   (ARaw $ encodeUtf8 ("qi('" +| decodeUtf8 target |+ "').innerText='" +| s |+ "'"))
 
@@ -196,7 +196,7 @@ defDePickle bs =
     Right x -> Just $ read $ CL8.unpack x
     _ -> Nothing
 
-getActions :: (B.Binary a) => N2O f a b [Action a]
+getActions :: (B.Binary a) => N2O f a [Action a]
 getActions = do
   mbActions <- get (C8.pack "actions")
   return $
@@ -204,5 +204,5 @@ getActions = do
            Just actions -> actions
            _ -> []
 
-putActions :: (B.Binary a) => [Action a] -> N2O f a b ()
+putActions :: (B.Binary a) => [Action a] -> N2O f a ()
 putActions = put (C8.pack "actions")

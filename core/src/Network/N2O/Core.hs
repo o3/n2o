@@ -10,21 +10,23 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
 import Control.Exception (SomeException)
 import Network.N2O.Types
+import Data.Map.Strict (insert, (!?))
 
 -- | @Term -> Msg@ encoder
-encodeBert :: Term -> Msg
-encodeBert = MsgBin . B.encode
+encodeBert :: Term -> Message
+encodeBert = BinaryMessage . B.encode
 -- | @Term -> Msg@ decoder
-decodeBert :: Msg -> Maybe Term
-decodeBert (MsgBin bin) =
+decodeBert :: Message -> Maybe Term
+decodeBert (BinaryMessage bin) =
   case B.decodeOrFail bin of
     Right (_,_,term) -> Just term
     _ -> Nothing
-decodeBert (MsgInit pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
-decodeBert MsgTerminate = Just $ AtomTerm "terminate"
+decodeBert (InitMessage pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
+decodeBert TerminateMessage = Just $ AtomTerm "terminate"
 decodeBert _ = Nothing
 
-mkCx = Cx
+-- | 'Context' constructor
+mkCx = Context
   { cxReq = undefined
   , cxHandler = undefined
   , cxMiddleware = []
@@ -36,16 +38,18 @@ mkCx = Cx
   , cxState = M.empty
   }
 
+-- | 'Req' constructor
 mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [] }
 
-nop :: Return
-nop = Reply (MsgBin BSL.empty)
+-- | NO-OP result
+nop :: Result
+nop = Reply (BinaryMessage BSL.empty)
 
 -- | N2O protocol loop
-protoRun :: Msg -> N2O f a b Return
+protoRun :: Message -> N2O f a Result
 protoRun msg = do
   ref <- ask
-  cx@Cx {cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
+  cx@Context {cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
   loop [] msg protos decode
   where
     loop _ _ [] _ = return nop
@@ -59,3 +63,27 @@ protoRun msg = do
             Reply msg1 -> return $ Reply msg1
             a -> loop (a : acc) msg protos decoder
         _ -> loop acc msg protos decoder
+
+-- | Lift underlying monad to the N2O monad
+lift :: m a -> N2OT state m a
+lift m = N2OT (const m)
+
+-- | Get current state (env)
+ask :: (Monad m) => N2OT state m state
+ask = N2OT return
+
+-- | Put data to the local state
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a ()
+put k v = do
+  state <- ask
+  lift $ modifyIORef state (\cx@Context{cxState=m} -> cx{cxState=insert k (B.encode v) m})
+
+-- | Get data from the local state
+get :: (B.Binary bin) => BS.ByteString -> N2O f a (Maybe bin)
+get k = do
+  state <- N2OT return
+  cx <- lift $ readIORef state
+  let mp = cxState cx
+  case mp !? k of
+    Just v -> return $ Just (B.decode v)
+    _ -> return Nothing

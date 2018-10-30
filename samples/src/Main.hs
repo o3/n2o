@@ -3,7 +3,7 @@ module Main (main) where
 
 import Network.N2O
 import Network.N2O.Web
-import Network.N2O.Protocols
+import Network.N2O.Protocols hiding (Init)
 import Network.N2O.Nitro
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
@@ -16,7 +16,7 @@ main = runServer "localhost" 3000 cx
 
 cx = createCx router
 
-router cx@Cx{cxReq=Req{reqPath=path}} =
+router cx@Context{cxReq=Req{reqPath=path}} =
   let handler = case path of
                   "/ws/samples/static/index.html" -> index
                   "/ws/samples/static/about.html" -> about
