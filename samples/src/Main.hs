@@ -2,7 +2,6 @@
 module Main (main) where
 
 import Network.N2O
-import Network.N2O.Util
 import Network.N2O.WebSockets
 import Network.N2O.Http
 import Network.N2O.Protocols

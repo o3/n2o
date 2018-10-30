@@ -9,9 +9,11 @@ import           Data.Char                   (toLower)
 import           Data.List                   (intersperse)
 import           Data.String
 import qualified Data.Text                   as T
+import qualified Data.Text.Lazy              as TL
 import Data.Text.Lazy.Encoding
 import Data.Map.Strict ((!?))
 import Data.IORef
+import Data.Char (isAlphaNum, ord)
 import           Fmt
 import           Fmt.Internal.Core
 import           Prelude                     hiding (id)
@@ -20,6 +22,7 @@ import Control.Monad (forM_)
 import Network.N2O.Types
 import GHC.Generics (Generic)
 import qualified Data.Binary as B
+import Numeric (showHex)
 
 {-
 type Action = T.Text
@@ -162,3 +165,13 @@ insertBottom target elem = do
   wire $ T.pack action
   forM_ acs wire
 -}
+
+jsEscape :: C8.ByteString -> C8.ByteString
+jsEscape t = encodeUtf8 $ TL.pack (escape (TL.unpack $ decodeUtf8 t) "")
+  where
+    escape "" acc = acc
+    escape (x : xs) acc = escape xs $
+      if isAlphaNum x then
+        acc ++ [x]
+      else
+        acc <> "\\x" <> (flip showHex "" . ord $ x)
