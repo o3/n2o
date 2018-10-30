@@ -23,8 +23,6 @@ of client-server interaction first was used by Rusty Klophaus in
 his Nitrogen web framework, that was pushed forward since then in
 N2O by Andy Melnikov and Marat Khafizov.
 
-https://haskell.n2o.space
-
 Setup
 -----
 
