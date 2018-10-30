@@ -8,6 +8,14 @@ import Data.IORef
 import qualified Data.Binary as B
 import Data.Map.Strict (Map, insert, (!?))
 
+type Header = (BS.ByteString, BS.ByteString)
+
+data Req = Req
+  { reqPath :: BS.ByteString
+  , reqMeth :: BS.ByteString
+  , reqVers :: BS.ByteString
+  , reqHead :: [Header]
+  }
 
 data Cx (f :: * -> *) (a :: *) (b :: *) = Cx
   { cxHandler :: W a -> N2O f a b b
@@ -25,15 +33,32 @@ type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
 
 -- | Lightweight version of ReaderT from @transformers@ package
 newtype N2OM state m a = N2OM { runN2O :: state -> m a }
+
 instance Functor m => Functor (N2OM state m) where
   fmap f (N2OM g) = N2OM (fmap f . g)
+
 instance Applicative m => Applicative (N2OM state m) where
   pure = lift . pure
   (N2OM f) <*> (N2OM g) = N2OM $ \state -> f state <*> g state
+
 instance Monad m => Monad (N2OM state m) where
   m >>= k = N2OM $ \state -> do
     a <- runN2O m state
     runN2O (k a) state
+
+data Msg = MsgTxt TL.Text | MsgBin BL.ByteString | MsgInit BL.ByteString | MsgTerminate deriving (Show, Eq)
+
+-- | Result of the message processing
+data Return = Reply Msg | Ok | Unknown deriving (Show, Eq)
+
+-- | N2O protocol
+newtype Proto (f :: * -> *) (a :: *) (b :: *) =
+  Proto{ protoInfo :: f a -> N2O f a b Return }
+
+data W a = Init | Message a | Terminate
+
+type Encoder (a :: *) = a -> Msg
+type Decoder (a :: *) = Msg -> Maybe a
 
 lift :: m a -> N2OM state m a
 lift m = N2OM (const m)
@@ -54,25 +79,3 @@ get k = do
   case mp !? k of
     Just v -> return $ Just (B.decode v)
     _ -> return Nothing
-
-data Msg = MsgTxt TL.Text | MsgBin BL.ByteString | MsgInit BL.ByteString | MsgTerminate deriving (Show, Eq)
-
-type Header = (BS.ByteString, BS.ByteString)
-data Req = Req
-  { reqPath :: BS.ByteString
-  , reqMeth :: BS.ByteString
-  , reqVers :: BS.ByteString
-  , reqHead :: [Header]
-  }
-
--- | Result of the message processing
-data Return = Reply Msg | Ok | Unknown deriving (Show, Eq)
-
--- | N2O protocol
-newtype Proto (f :: * -> *) (a :: *) (b :: *) =
-  Proto{ protoInfo :: f a -> N2O f a b Return }
-
-data W a = Init | Message a | Terminate
-
-type Encoder (a :: *) = a -> Msg
-type Decoder (a :: *) = Msg -> Maybe a
