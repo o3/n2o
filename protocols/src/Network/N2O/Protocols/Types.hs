@@ -8,7 +8,7 @@ import qualified Data.ByteString as BS
 data N2OProto a = N2ONitro (Nitro a) | N2OClient (Client a) deriving (Show)
 
 -- | Client protocol message type
-data Client a = C a | S a deriving (Show)
+data Client a = Cli a | Srv a deriving (Show)
 
 -- | Nitro protocol message type
 data Nitro a =

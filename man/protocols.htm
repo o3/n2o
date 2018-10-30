@@ -50,19 +50,19 @@
 <h4>CLIENT</h4>
 
 <figure><figcaption>Listing 2. Client/Server Protocol</figcaption><code>
-  data Client a = C a
-                | S a deriving (Show)
+  data Client a = Cli a
+                | Srv a deriving (Show)
 
 </code></figure>
 
 <h4>NITRO</h4>
 
 <figure><figcaption>Listing 2. Nitro Protocol</figcaption><code>
-  data Nitro a = I L.ByteString
-               | P { pickleSource  :: L.ByteString
-                   , picklePickled :: L.ByteString
-                   , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
-                   } deriving (Show)
+  data Nitro a = Init L.ByteString
+               | Pickle { pickleSource  :: L.ByteString
+                        , picklePickled :: L.ByteString
+                        , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
+                        } deriving (Show)
 
 </code></figure>
 
