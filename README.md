@@ -45,13 +45,15 @@ import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
 import Network.N2O.Nitro
+import GHC.Generics (Generic)
+import Data.Binary (Binary)
 import Prelude hiding (id)
 ```
 
 ### Static Server and Page Router
 
 ```haskell
-  data Example = Greet deriving (Show, Eq, Read)
+  data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
 
   main = runServer "localhost" 3000 cx
   cx = createCx router
