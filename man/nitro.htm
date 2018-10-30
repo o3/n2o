@@ -35,12 +35,12 @@
 <h3>EVENT</h3>
 
 <figure><figcaption>Listing 1. Nitro Event</figcaption><code>
-    data Event a = Event
-      { eventTarget   :: String
-      , eventPostback :: a
-      , eventType     :: String
-      , eventSource   :: [String]
-      } deriving (Show, Generic)
+  data Event a = Event
+               { eventTarget   :: String
+               , eventPostback :: a
+               , eventType     :: String
+               , eventSource   :: [String]
+               } deriving (Show, Generic)
 
 </code></figure>
 
