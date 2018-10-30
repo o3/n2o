@@ -1,5 +1,5 @@
 name:           n2o-samples
-version:        0.1.0.0
+version:        0.11
 description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o-hs#readme>
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
@@ -27,6 +27,8 @@ executable n2o-sample
                 base >=4.7 && < 5
               , n2o
               , n2o-web
+              , n2o-protocols
+              , nitro
               , bert
               , binary
               , bytestring

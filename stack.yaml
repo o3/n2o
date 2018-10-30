@@ -1,6 +1,8 @@
 resolver: lts-12.13
 packages:
 - ./core
+- ./nitro
+- ./protocols
 - ./web
 - ./samples
 extra-deps:

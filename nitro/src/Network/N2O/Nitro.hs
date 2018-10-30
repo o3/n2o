@@ -4,7 +4,8 @@ module Network.N2O.Nitro where
 
 import qualified Data.ByteString             as BS
 import qualified Data.ByteString.Lazy        as BL
-import qualified Data.ByteString.Lazy.Char8  as C8
+import qualified Data.ByteString.Char8       as C8
+import qualified Data.ByteString.Lazy.Char8  as CL8
 import Data.Char (toLower, isAlphaNum, ord)
 import           Data.List                   (intercalate)
 import           Data.String
@@ -20,6 +21,7 @@ import Network.N2O.Types
 import GHC.Generics (Generic)
 import qualified Data.Binary as B
 import Numeric (showHex)
+import qualified Data.ByteString.Base64.Lazy as B64
 
 data Element a
   = Element { name      :: String
@@ -182,5 +184,25 @@ jsEscapeT t = TL.pack (escape (TL.unpack t) "")
       else
         acc <> "\\x" <> (flip showHex "" . ord $ x)
 
-jsEscape :: C8.ByteString -> TL.Text
+jsEscape :: CL8.ByteString -> TL.Text
 jsEscape = jsEscapeT . decodeUtf8
+
+defPickle :: (Show a) => a -> BL.ByteString
+defPickle = B64.encode . CL8.pack . show
+
+defDePickle :: (Read a) => BL.ByteString -> Maybe a
+defDePickle bs =
+  case B64.decode bs of
+    Right x -> Just $ read $ CL8.unpack x
+    _ -> Nothing
+
+getActions :: (B.Binary a) => N2O f a b [Action a]
+getActions = do
+  mbActions <- get (C8.pack "actions")
+  return $
+    case mbActions of
+           Just actions -> actions
+           _ -> []
+
+putActions :: (B.Binary a) => [Action a] -> N2O f a b ()
+putActions = put (C8.pack "actions")
