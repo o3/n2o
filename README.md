@@ -39,7 +39,7 @@ Nitro Protocol Demo
 
 ### Static Server and Page Router
 
-```
+```haskell
   data Example = Greet deriving (Show, Eq, Read)
 
   main = runServer "localhost" 3000 cx
@@ -54,7 +54,7 @@ Nitro Protocol Demo
 
 ### Nitro Page Sample
 
-```
+```haskell
   index Init = do
       updateText "system" "What is your name?"
       wireEl button{id="send", postback=Just Greet, source=["name"]}
