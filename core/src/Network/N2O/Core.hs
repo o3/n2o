@@ -65,12 +65,12 @@ protoRun msg = do
         _ -> loop acc msg protos decoder
 
 -- | Lift underlying monad to the N2O monad
-lift :: m a -> N2OM state m a
-lift m = N2OM (const m)
+lift :: m a -> N2OT state m a
+lift m = N2OT (const m)
 
 -- | Get current state (env)
-ask :: (Monad m) => N2OM state m state
-ask = N2OM return
+ask :: (Monad m) => N2OT state m state
+ask = N2OT return
 
 -- | Put data to the local state
 put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a ()
@@ -81,7 +81,7 @@ put k v = do
 -- | Get data from the local state
 get :: (B.Binary bin) => BS.ByteString -> N2O f a (Maybe bin)
 get k = do
-  state <- N2OM return
+  state <- N2OT return
   cx <- lift $ readIORef state
   let mp = cxState cx
   case mp !? k of

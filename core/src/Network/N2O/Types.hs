@@ -39,21 +39,21 @@ data Context (f :: * -> *) (a :: *) = Context
 -- | Local mutable state
 type State f a = IORef (Context f a)
 
--- | 'N2OM' over 'IO' with 'N2OState' as env
-type N2O f a = N2OM (State f a) IO
+-- | 'N2OT' over 'IO' with 'N2OState' as env
+type N2O f a = N2OT (State f a) IO
 
 -- | Lightweight version of @ReaderT@ from @transformers@ package
-newtype N2OM state m a = N2OM { runN2O :: state -> m a }
+newtype N2OT state m a = N2OT { runN2O :: state -> m a }
 
-instance Functor m => Functor (N2OM state m) where
-  fmap f (N2OM g) = N2OM (fmap f . g)
+instance Functor m => Functor (N2OT state m) where
+  fmap f (N2OT g) = N2OT (fmap f . g)
 
-instance Applicative m => Applicative (N2OM state m) where
-  pure = N2OM . const . pure
-  (N2OM f) <*> (N2OM g) = N2OM $ \state -> f state <*> g state
+instance Applicative m => Applicative (N2OT state m) where
+  pure = N2OT . const . pure
+  (N2OT f) <*> (N2OT g) = N2OT $ \state -> f state <*> g state
 
-instance Monad m => Monad (N2OM state m) where
-  m >>= k = N2OM $ \state -> do
+instance Monad m => Monad (N2OT state m) where
+  m >>= k = N2OT $ \state -> do
     a <- runN2O m state
     runN2O (k a) state
 
