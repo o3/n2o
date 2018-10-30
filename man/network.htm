@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>PROTOCOLS</title>
+    <title>NETWORK</title>
     <link rel="stylesheet" href="https://synrc.space/synrc.css" />
 </head>
 
@@ -20,7 +20,7 @@
 
 <header>
     <a href="../index.html"><img src="https://n2o.space/img/Synrc Neo.svg"></a>
-    <h1>PROTOCOLS</h1>
+    <h1>NETWORK</h1>
 </header>
 
 <main>
@@ -28,45 +28,35 @@
 
 <h3>INTRO</h3>
 
-<p></p>
+<p><b>Network.N2O</b> defines adjoin interfaces to underlying
+   transports: HTTP for static file serving and WebSocket for N2O protocols.</p>
 
     </section>
     <section>
 
-<h3>PROTOCOLS</h3>
+<h3>WebSocket</h3>
 
-<h4>CLIENT</h4>
+<h4>wsApp :: Cx f a b -> WS.ServerApp</h4>
+<h4>listen :: WS.Connection -> N2OState f a b -> IO ()</h4>
 
-<figure><figcaption>Listing 1. Client/Server</figcaption><code>
+    </section>
+    <section>
 
-  data Client a = C a
-                | S a deriving (Show)
+<h3>HTTP</h3>
 
-</code></figure>
-
-<h4>NITRO</h4>
-
-<figure><figcaption>Listing 2. Protocol Datatype</figcaption><code>
-  data Nitro a = I L.ByteString
-               | P { pickleSource  :: L.ByteString
-                   , picklePickled :: L.ByteString
-                   , pickleLinked  :: (M.Map BS.ByteString L.ByteString)
-                   } deriving (Show)
-
-</code></figure>
-
-<figure><figcaption>Listing 3. Protocol API</figcaption><code>
-  nitroProto :: (Show a) => Proto N2OProto a L.ByteString
-  nitroInfo  :: (Show a) => N2OProto a -> N2O N2OProto a L.ByteString Rslt
-
-</code></figure>
+<h4>runServer :: String -> Int -> Cx f a b -> IO ()</h4>
+<h4>talk :: HttpConf -> Cx f a b -> Socket -> SockAddr -> IO ()</h4>
+<h4>sendResp :: HttpConf -> Socket -> Resp -> IO ()</h4>
+<h4>acceptConnections :: HttpConf -> Cx f a b -> Socket -> IO ()</h4>
+<h4></h4>
 
     </section>
     <section>
 
 <p>This module may refer to:
 <a href="types.htm">TYPES</a></b>,
-<a href="types.htm">INTERNAL</a></b>
+<a href="protocols.htm">PROTOCOLS</a></b>,
+<a href="internal.htm">INTERNAL</a></b>
 </p>
 
     </section>

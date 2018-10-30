@@ -13,7 +13,7 @@
 <body>
 
 <nav>
-    <a href='https://synrc.space/'>SYNRC</a>
+    <!--a href='https://synrc.space/'>SYNRC</a-->
     <a href='https://n2o.space'>N2O</a>
     <a href='https://haskell.n2o.space'>HASKELL</a>
 </nav>
@@ -29,14 +29,15 @@
 
 <h3>INTRO</h3>
 
-<p>The <b>INTERNAL</b> module dedicated for holding core <b>N2O</b> structures.</p>
+<p>The <b>Network.N2O.Internal</b> module is dedicated
+   for holding core <b>N2O</b> structures and APIs.</p>
 
     </section>
     <section>
 
 <h3>PICKLER</h3>
 
-<h4>pickle :: (Show a) => a -> L.ByteString
+<h4>pickle   :: (Show a) => a -> L.ByteString
 <h4>depickle :: (Read a) => L.ByteString -> Maybe a
 
     </section>
@@ -44,9 +45,8 @@
 
 <h3>FORMATTER</h3>
 
-<h4>encode :: Term -> Msg</h4>
-
-<h4>decode :: Msg -> Maybe Term</h4>
+<h4>type Encoder (a :: *) = a -> Msg</h4>
+<h4>type Decoder (a :: *) = Msg -> Maybe a</h4>
 
 </section>
 <section>
@@ -84,14 +84,14 @@
 <p>This module may refer to:
 <b>
 <a href="types.htm">TYPES</a></b>,
-<a href="types.htm">PROTOCOLS</a></b>
+<a href="protocols.htm">PROTOCOLS</a></b>
 </p>
 
     </section>
 </main>
 
 <footer>
-    2005&mdash;2017 &copy; Synrc Research Center
+    Made with <span class="heart">❤</span> for Haskell and N2O
 </footer>
 
 </body>
