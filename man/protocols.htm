@@ -35,15 +35,20 @@
 
 <h3>PROTOCOLS</h3>
 
-<h4>PROTOCOL Datatype</h4>
+<p></p>
 
-<figure><figcaption>Listing 1. Protocol Datatype</figcaption><code>
-   data N2OProto a = N2ONitro (Nitro a) {- could be extended -}
+<h4>FEDERATION</h4>
+
+<figure><figcaption>Listing 1. N2O Subrotocols</figcaption><code>
+  data N2OProto a = N2ONitro   (Nitro a)
+                  | N2OWorkflow (Flow a)
+                  | N2OClient (Client a)
+                  | N2OStore   (Store a)
 </code></figure>
 
 <h4>NITRO</h4>
 
-<figure><figcaption>Listing 2. Protocol Datatype</figcaption><code>
+<figure><figcaption>Listing 2. Nitro Protocol</figcaption><code>
   data Nitro a = I L.ByteString
                | P { pickleSource  :: L.ByteString
                    , picklePickled :: L.ByteString

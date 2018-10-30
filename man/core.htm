@@ -59,21 +59,19 @@
 
 <figure><figcaption>Listing 3. Haskell N2O Protocol Loop</figcaption><code>
   protoRun msg = do
-    ref <- ask
-    cx@Cx{cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
-    loop [] msg protos decode
-  where
-    loop _ _ [] _ = return $ nop
-    loop acc msg (proto:protos) decoder = do
-      let mbDecoded = decoder msg
-      case mbDecoded of
-        Just decoded -> do
-          res <- protoInfo proto decoded
-          case res of
-            Unknown -> loop acc msg protos decoder
-            Reply msg1 -> return $ Reply msg1
-            a -> loop (a:acc) msg protos decoder
-        _ -> loop acc msg protos decoder
+      ref <- ask
+      cx@Cx{cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
+      loop [] msg protos decode where
+      loop _ _ [] _ = return $ nop
+      loop acc msg (proto:protos) decoder = do
+           let  mbDecoded = decoder msg
+           case mbDecoded of
+                Just decoded -> do
+                     res <- protoInfo proto decoded
+                     case res of Unknown -> loop acc msg protos decoder
+                              Reply msg1 -> return $ Reply msg1
+                                       a -> loop (a:acc) msg protos decoder
+                           _ -> loop acc msg protos decoder
 
 </code></figure>
 
