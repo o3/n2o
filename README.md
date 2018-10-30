@@ -11,7 +11,7 @@ Features
 * High Performance Protocol Relay
 * Smallest possible codebase — 500 LOC
 
-N2O defined a way we scale protocols, database schema, applications and
+N2O defines a way we scale protocols, database schema, applications and
 services across companies, formatters, views and presentation layers.
 At the core N2O folds a list of protocols and their handlers providing
 a minimal type-level specification for general purpose application protocol tract.
