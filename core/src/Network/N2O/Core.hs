@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-|
+Module      : Network.N2O.Core
+Description : Core functions
+Copyright   : (c) Marat Khafizov, 2018
+License     : BSD-3
+Maintainer  : xafizoff@gmail.com
+Stability   : experimental
+Portability : not portable
+
+Core functions
+
+-}
 module Network.N2O.Core where
 
 import Data.BERT

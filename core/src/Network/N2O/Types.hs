@@ -1,4 +1,17 @@
 {-# LANGUAGE KindSignatures #-}
+
+{-|
+Module      : Network.N2O.Types
+Description : Basic types
+Copyright   : (c) Marat Khafizov, 2018
+License     : BSD-3
+Maintainer  : xafizoff@gmail.com
+Stability   : experimental
+Portability : not portable
+
+Basic types
+
+-}
 module Network.N2O.Types where
 
 import qualified Data.Text.Lazy as TL
@@ -42,7 +55,7 @@ type State f a = IORef (Context f a)
 -- | 'N2OT' over 'IO' with 'N2OState' as env
 type N2O f a = N2OT (State f a) IO
 
--- | Lightweight version of @ReaderT@ from @transformers@ package
+-- | Reader monad transformer
 newtype N2OT state m a = N2OT { runN2O :: state -> m a }
 
 instance Functor m => Functor (N2OT state m) where
