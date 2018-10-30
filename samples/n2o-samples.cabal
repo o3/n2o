@@ -27,6 +27,8 @@ executable n2o-sample
                 base >=4.7 && < 5
               , n2o
               , n2o-web
+              , n2o-protocols
+              , nitro
               , bert
               , binary
               , bytestring
