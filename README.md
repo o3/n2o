@@ -1,5 +1,7 @@
 # N2O for Haskell
 
+[![Build Status](https://travis-ci.org/xafizoff/n2o-hs.svg?branch=master)](https://travis-ci.org/xafizoff/n2o-hs)
+
 https://haskell.n2o.space
 
 ## Run the sample code
