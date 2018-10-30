@@ -53,8 +53,9 @@
 
 <h3>ACTION</h3>
 
-<figure><figcaption>Listing 1. Nitro Event</figcaption><code>
+<figure><figcaption>Listing 1. Nitro Actions</figcaption><code>
   data Action a = AEvent (Event a)
+                | AElement (Element a)
                 | ARaw BL.ByteString deriving (Show, Generic)
 
 </code></figure>
@@ -69,7 +70,7 @@
 
 <h3>ELEMENT</h3>
 
-<figure><figcaption>Listing 1. Nitro Event</figcaption><code>
+<figure><figcaption>Listing 1. Nitro Element</figcaption><code>
   baseElement = Element
               { id = ""
               , name = undefined
