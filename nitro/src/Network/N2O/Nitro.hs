@@ -133,7 +133,7 @@ baseElement =
   Element
     { id = ""
     , name = undefined
-    , postback = undefined
+    , postback = Nothing
     , body = []
     , source = []
     , noBody = False
