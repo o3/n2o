@@ -41,20 +41,21 @@ mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = []
 nop :: Return
 nop = Reply (MsgBin BSL.empty)
 
-protoRun :: forall f a b. Msg -> N2O f a b Return
+-- | N2O protocol loop
+protoRun :: Msg -> N2O f a b Return
 protoRun msg = do
   ref <- ask
   cx@Cx {cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
-  go [] msg protos decode
+  loop [] msg protos decode
   where
-    go _ _ [] _ = return nop
-    go acc msg (proto:protos) decoder = do
+    loop _ _ [] _ = return nop
+    loop acc msg (proto:protos) decoder = do
       let mbDecoded = decoder msg
       case mbDecoded of
         Just decoded -> do
           res <- protoInfo proto decoded
           case res of
-            Unknown -> go acc msg protos decoder
+            Unknown -> loop acc msg protos decoder
             Reply msg1 -> return $ Reply msg1
-            a -> go (a : acc) msg protos decoder
-        _ -> go acc msg protos decoder
+            a -> loop (a : acc) msg protos decoder
+        _ -> loop acc msg protos decoder
