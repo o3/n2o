@@ -2,10 +2,7 @@
 module Main (main) where
 
 import Network.N2O
-import Network.N2O.WebSockets
-import Network.N2O.Http
-import Network.N2O.Protocols
-import Network.N2O.Nitro
+import Network.N2O.Web
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
 import Prelude hiding (id)

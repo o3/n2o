@@ -17,8 +17,9 @@ source-repository head
   location: https://github.com/xafizoff/n2o-hs
 
 library
-  exposed-modules: Network.N2O.WebSockets
-                 , Network.N2O.Http
+  exposed-modules: Network.N2O.Web
+                 , Network.N2O.Web.Http
+                 , Network.N2O.Web.WebSockets
   other-modules:
       Paths_n2o_web
   hs-source-dirs:

@@ -2,7 +2,7 @@
 module Network.N2O.Protocols where
 
 import Network.N2O.Types
-import Network.N2O.Internal
+import Network.N2O.Core
 import Network.N2O.Nitro
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString      as BS

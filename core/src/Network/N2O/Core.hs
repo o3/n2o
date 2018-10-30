@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
-module Network.N2O.Internal where
+module Network.N2O.Core where
 
 import Data.BERT
 import Data.IORef

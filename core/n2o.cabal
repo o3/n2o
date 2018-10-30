@@ -20,7 +20,7 @@ library
   exposed-modules:
                   Network.N2O
                 , Network.N2O.Types
-                , Network.N2O.Internal
+                , Network.N2O.Core
                 , Network.N2O.Protocols
                 , Network.N2O.Nitro
   other-modules:

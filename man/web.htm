@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>NETWORK</title>
+    <title>WEB</title>
     <link rel="stylesheet" href="https://synrc.space/synrc.css" />
 </head>
 
@@ -20,7 +20,7 @@
 
 <header>
     <a href="../index.html"><img src="https://n2o.space/img/Synrc Neo.svg"></a>
-    <h1>NETWORK</h1>
+    <h1>WEB</h1>
 </header>
 
 <main>
@@ -28,7 +28,7 @@
 
 <h3>INTRO</h3>
 
-<p><b>Network.N2O</b> defines adjoin interfaces to underlying
+<p><b>Network.N2O.Web</b> defines adjoin interfaces to underlying
    transports: HTTP for static file serving and WebSocket for N2O protocols.</p>
 
     </section>
@@ -37,7 +37,6 @@
 <h3>WebSocket</h3>
 
 <h4>wsApp :: Cx f a b -> WS.ServerApp</h4>
-<h4>listen :: WS.Connection -> N2OState f a b -> IO ()</h4>
 
     </section>
     <section>
@@ -45,9 +44,6 @@
 <h3>HTTP</h3>
 
 <h4>runServer :: String -> Int -> Cx f a b -> IO ()</h4>
-<h4>talk :: HttpConf -> Cx f a b -> Socket -> SockAddr -> IO ()</h4>
-<h4>sendResp :: HttpConf -> Socket -> Resp -> IO ()</h4>
-<h4>acceptConnections :: HttpConf -> Cx f a b -> Socket -> IO ()</h4>
 <h4></h4>
 
     </section>
@@ -56,7 +52,7 @@
 <p>This module may refer to:
 <a href="types.htm">TYPES</a></b>,
 <a href="protocols.htm">PROTOCOLS</a></b>,
-<a href="internal.htm">INTERNAL</a></b>
+<a href="core.htm">CORE</a></b>
 </p>
 
     </section>
