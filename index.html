@@ -38,10 +38,10 @@
             <a name=plugin><h3>MANUAL</h3></a>
             <div><ul>
             <li><a href="man/types.htm">Network.N2O.Types</a></font></li>
-            <li><a href="man/internal.htm">Network.N2O.Internal</a></font></li>
+            <li><a href="man/core.htm">Network.N2O.Core</a></font></li>
             <li><a href="man/protocols.htm">Network.N2O.Protocols</a></font></li>
             <li><a href="man/nitro.htm">Network.N2O.Nitro</a></font></li>
-            <li><a href="man/network.htm">Network.N2O</a></font></li>
+            <li><a href="man/web.htm">Network.N2O.Web</a></font></li>
             </ul></div>
             <br>
             <div>
@@ -89,20 +89,16 @@
         <figure>
             <figcaption>Listing 3. NITRO Web Protocol</figcaption>
         <code>
-    index Init = do
-      wire $ ARaw "qi('system').innerText='What is your name?'"
-      wire $ AEvent Event { eventTarget   = "send"
-                          , eventPostback = Greet
-                          , eventType     = "click"
-                          , eventSource   = [ "name" ]
-                          }
+            index Init = do
+                updateText "system" "What is your name?"
+                wireEl button{id="send", postback=Just Greet, source=["name"]}
 
-    index (Message Greet) = do
-      Just name <- get "name"
-      wire $ ARaw $ "qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"
+            index (Message Greet) = do
+                Just name <- get "name" -- wf:q/1
+                updateText "system" ("Hello, " <> jsEscape name <> "!")
 
-    about Init = do
-      wire $ ARaw "qi('app').innerText='This is the N2O Hello World App'"
+            about Init =
+                updateText "app" "This is the N2O Hello World App"
         </code></figure>
     </section>
 
@@ -110,9 +106,9 @@
         <a name=plugin><h3>Documents</h3></a>
         <div>
         <ul>
-         <a href="man/network.htm">NETWORK</a></b>,
+         <a href="man/web.htm">WEB</a></b>,
          <a href="man/types.htm">TYPES</a></b>,
-         <a href="man/internal.htm">INTERNAL</a></b>,
+         <a href="man/core.htm">CORE</a></b>,
          <a href="man/protocols.htm">PROTOCOLS</a></b>,
          <a href="man/nitro.htm">NITRO</a></b>.
         </ul></div>

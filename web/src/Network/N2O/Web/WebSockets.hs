@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Network.N2O.WebSockets ( wsApp , mkPending ) where
+module Network.N2O.Web.WebSockets ( wsApp , mkPending ) where
 
 import           Control.Exception              (catch, finally)
 import           Control.Monad                  (forM_, forever, mapM_)
@@ -10,7 +10,7 @@ import qualified Data.ByteString.Lazy.Char8     as LC8
 import qualified Data.Text.Lazy                 as T
 import           Data.Text.Lazy.Encoding
 import           Network.N2O.Types
-import           Network.N2O.Internal
+import           Network.N2O.Core
 import           Network.Socket                 (Socket)
 import qualified Network.WebSockets             as WS
 import qualified Network.WebSockets.Connection  as WSConn

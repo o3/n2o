@@ -1,14 +1,11 @@
-{-# LANGUAGE TypeFamilies, OverloadedLists, OverloadedStrings, FlexibleContexts, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
 module Main (main) where
 
 import Network.N2O
-import Network.N2O.Util
-import Network.N2O.WebSockets
-import Network.N2O.Http
-import Network.N2O.Protocols
-import Network.N2O.Nitro
+import Network.N2O.Web
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
+import Prelude hiding (id)
 import Debug.Trace
 
 data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
@@ -25,10 +22,10 @@ router cx@Cx{cxReq=Req{reqPath=path}} =
   in traceShow path cx{cxHandler=handler}
 
 index Init = do
-  wire (ARaw "qi('system').innerText='What is your name?'")
-  wire $ AEvent Event{eventTarget="send",eventPostback=Greet,eventType="click",eventSource=["name"]}
+  updateText "system" "What is your name?"
+  wireEl button{id="send", postback=Just Greet, source=["name"]}
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
-  wire (ARaw ("qi('system').innerText='Hello, " <> (jsEscape name) <> "!'"))
-about Init = do
-  wire (ARaw "qi('app').innerText='This is the N2O Hello World App'")
+  updateText "system" ("Hello, " <> jsEscape name <> "!")
+about Init =
+  updateText "app" "This is the N2O Hello World App"

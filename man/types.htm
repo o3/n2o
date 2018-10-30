@@ -85,18 +85,18 @@
     <section>
 <h3>PROTO</h3>
 
-<p><b>Rslt</b> formalize Erlang return protocol,
+<p><b>Return</b> formalize Erlang return protocol,
    <b>Msg</b> relates to WebSocket streaming,
    <b>Proto</b> is protocol handler.</p>
 
 <figure><figcaption>Listing 1. N2O PROTO</figcaption><code>
-  data Rslt
+  data Return
      = Reply Msg
      | Ok
      | Unknown deriving (Show, Eq)
 
   data Proto (f :: * -> *) (a :: *) (b :: *)
-     = Proto { protoInfo :: f a -> N2O f a b Rslt }
+     = Proto { protoInfo :: f a -> N2O f a b Return }
 
   data Msg
      = MsgTxt TL.Text
@@ -112,7 +112,7 @@
 
 <p>This module may refer to:
 <a href="types.htm">INTERNAL</a></b>,
-<a href="types.htm">PROTOCOLS</a></b>
+<a href="core.htm">CORE</a></b>
 </p>
 
     </section>

@@ -26,7 +26,7 @@ type N2O (f :: * -> *) (a :: *) (b :: *) = N2OM (N2OState f a b) IO
 -- | Lightweight version of ReaderT from @transformers@ package
 newtype N2OM state m a = N2OM { runN2O :: state -> m a }
 instance Functor m => Functor (N2OM state m) where
-  fmap f (N2OM g) = N2OM $ (\x -> fmap f (g x))
+  fmap f (N2OM g) = N2OM (fmap f . g)
 instance Applicative m => Applicative (N2OM state m) where
   pure = lift . pure
   (N2OM f) <*> (N2OM g) = N2OM $ \state -> f state <*> g state
@@ -66,12 +66,11 @@ data Req = Req
   }
 
 -- | Result of the message processing
-data Rslt = Reply Msg | Ok | Unknown deriving (Show, Eq)
+data Return = Reply Msg | Ok | Unknown deriving (Show, Eq)
 
 -- | N2O protocol
-data Proto (f :: * -> *) (a :: *) (b :: *) = Proto
-  { protoInfo :: f a -> N2O f a b Rslt
-  }
+newtype Proto (f :: * -> *) (a :: *) (b :: *) =
+  Proto{ protoInfo :: f a -> N2O f a b Return }
 
 data W a = Init | Message a | Terminate
 

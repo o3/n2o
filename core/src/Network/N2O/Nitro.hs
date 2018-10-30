@@ -5,42 +5,42 @@ module Network.N2O.Nitro where
 import qualified Data.ByteString             as BS
 import qualified Data.ByteString.Lazy        as BL
 import qualified Data.ByteString.Lazy.Char8  as C8
-import           Data.Char                   (toLower)
-import           Data.List                   (intersperse)
+import Data.Char (toLower, isAlphaNum, ord)
+import           Data.List                   (intercalate)
 import           Data.String
-import qualified Data.Text                   as T
+import qualified Data.Text.Lazy              as TL
 import Data.Text.Lazy.Encoding
 import Data.Map.Strict ((!?))
 import Data.IORef
 import           Fmt
 import           Fmt.Internal.Core
 import           Prelude                     hiding (id)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Network.N2O.Types
 import GHC.Generics (Generic)
 import qualified Data.Binary as B
+import Numeric (showHex)
 
-{-
-type Action = T.Text
-
-data Element
+data Element a
   = Element { name      :: String
             , id        :: String
-            , body      :: [Element]
-            , postback  :: String
+            , body      :: [Element a]
+            , postback  :: Maybe a
             , source    :: [String]
             , noBody    :: Bool
             , noClosing :: Bool
             }
-  | Text T.Text
-  deriving (Show)
--}
+  | Text TL.Text
+  deriving (Show, Generic)
+instance (B.Binary a) => B.Binary (Element a)
 
-data Action a = AEvent (Event a) | ARaw BL.ByteString deriving (Show, Generic)
+data Action a =
+    AEvent (Event a)
+  | AElement (Element a)
+  | ARaw BL.ByteString
+  deriving (Show, Generic)
 instance (B.Binary a) => B.Binary (Action a)
 
--- data EventType = Click deriving (Show)
 data Event a = Event
   { eventTarget   :: String
   , eventPostback :: a
@@ -48,6 +48,9 @@ data Event a = Event
   , eventSource   :: [String]
   } deriving (Show, Generic)
 instance (B.Binary a) => B.Binary (Event a)
+
+wireEl :: (B.Binary a) => Element a -> N2O f a b BL.ByteString
+wireEl = wire . AElement
 
 wire :: forall f a b. (B.Binary a) => Action a -> N2O f a b BL.ByteString
 wire a = do
@@ -58,16 +61,51 @@ wire a = do
   put "actions" (a:actions)
   return ""
 
-renderActions :: [Action a] -> N2O f a b BL.ByteString
+renderActions :: forall f a b. (B.Binary a) => [Action a] -> N2O f a b BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
   rs <- renderActions as
   return (r <> ";" <> rs)
 
-renderAction :: Action a -> N2O f a b BL.ByteString
+renderAction :: (B.Binary a) => Action a -> N2O f a b BL.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
+renderAction (AElement el@Element {..}) = do
+  case postback of
+      Nothing -> return ()
+      Just pb -> void (wire $ AEvent Event
+        {eventType = "click", eventPostback = pb, eventTarget = id, eventSource = source})
+  return ""
+
+renderElements :: (B.Binary a) => [Element a] -> N2O f a b BL.ByteString
+renderElements [] = return ""
+renderElements (e:es) = do
+  r <- renderElement e
+  rs <- renderElements es
+  return (r <> rs)
+
+renderElement :: (B.Binary a) => Element a -> N2O f a b BL.ByteString
+renderElement (Text t) = return $ encodeUtf8 t
+renderElement Element {..} = do
+  case postback of
+    Nothing -> return ()
+    Just pb -> void (wire $ AEvent Event
+      {eventType = "click", eventPostback = pb, eventTarget = id, eventSource = source})
+  case name of
+    "br" -> return "<br>"
+    _ -> do
+      content <- renderElements body
+      return $ encodeUtf8 $
+        if noBody
+          then "<" +| name |+ " " +| idProp id |+ "/>"
+          else "<" +| name |+ " " +| idProp id |+ ">" +| decodeUtf8 content |+ "</" +| name |+ ">"
+  where
+    idProp :: String -> String
+    idProp x =
+      if x == ""
+        then ""
+        else "id=\"" +| x |+ "\""
 
 renderEvent :: Event a -> N2O f a b BL.ByteString
 renderEvent Event {..} = do
@@ -78,78 +116,50 @@ renderEvent Event {..} = do
       src -> return $ encodeUtf8 $
             "{ var x=qi('" +| eventTarget |+ "'); x && x.addEventListener('"
             +| eventType |+ "',function(event){ if (validateSources("
-            +| (strJoin $ map (\x -> "'" ++ x ++  "'") eventSource) |+
+            +| strJoin (map (\x -> "'" ++ x ++  "'") eventSource) |+
             ")) { ws.send(enc(tuple(atom('pickle'),bin('" +| eventTarget |+ "'),bin('"
-            +| (decodeUtf8 $ pickle eventPostback) |+ "'),"
-            +| (strJoin $ map renderSource src) |+
+            +| decodeUtf8 (pickle eventPostback) |+ "'),"
+            +| strJoin (map renderSource src) |+
             "))); } else console.log('Validation error'); })}"
   where
     renderSource s = "tuple(atom('" +| s |+ "'),querySource('" +| s |+"'))"
     strJoin [] = "[]"
-    strJoin l  = "[" ++ (concat $ intersperse "," l) ++ "]"
+    strJoin l  = "[" ++ intercalate "," l ++ "]"
 
-{-
-renderElements :: Nitro m => [Element] -> m Action
-renderElements []     = return ""
-renderElements (x:xs) = do
-  y <- renderElement x
-  ys <- renderElements xs
-  return $ y <> ys
-
-renderElement :: Nitro m => Element -> m Action
-renderElement (Text t) = return t
-renderElement Element {..} = do
-  case postback of
-    "" -> return ()
-    pb -> renderEvent click{eventPostback=pb,eventTarget=id,eventSource=source}
-        >>= wire
-  case name of
-    "br" -> return "<br>"
-    _ -> do
-      content <- renderElements body
-      return $
-        T.pack $
-        if noBody
-          then "<" +| name |+ " " +| (idProp id) |+ "/>"
-          else "<" +| name |+ " " +| (idProp id) |+ ">" +| content |+ "</" +| name |+
-               ">"
-  where
-    idProp :: String -> String
-    idProp x =
-      if x == ""
-        then ""
-        else "id=\"" +| x |+ "\""
-
-baseElement :: Element
+baseElement :: Element a
 baseElement =
   Element
     { id = ""
     , name = undefined
-    , postback = ""
+    , postback = undefined
     , body = []
     , source = []
     , noBody = False
     , noClosing = False
     }
 
-button :: Element
+button :: Element a
 button = baseElement { name = "button"
                      , source = [] }
 
 panel = baseElement { name = "div" }
 
-text :: T.Text -> Element
-text s = Text s
+text :: TL.Text -> Element a
+text = Text
 
 br = baseElement {name = "br", noBody = True, noClosing = True}
 
-textbox :: Element
+textbox :: Element a
 textbox = baseElement {name = "input type=\"text\"", noBody = True}
 
-alert :: Nitro m => T.Text -> m () 
-alert s = wire $ "alert('" <> s <> "');"
+alert :: (B.Binary a) => TL.Text -> N2O f a b BL.ByteString
+alert s = wire (ARaw ("alert('" <> encodeUtf8 s <> "')"))
 
-insertBottom :: Nitro m => String -> Element -> m ()
+updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a b BL.ByteString
+updateText target s = wire
+  (ARaw $ encodeUtf8 ("qi('" +| decodeUtf8 target |+ "').innerText='" +| s |+ "'"))
+
+{-insertBottom :: Nitro m => String -> Element -> m ()
 insertBottom target elem = do
   content <- renderElement elem
   acs <- actions
@@ -160,5 +170,17 @@ insertBottom target elem = do
   
   clear
   wire $ T.pack action
-  forM_ acs wire
--}
+  forM_ acs wire-}
+
+jsEscapeT :: TL.Text -> TL.Text
+jsEscapeT t = TL.pack (escape (TL.unpack t) "")
+  where
+    escape "" acc = acc
+    escape (x : xs) acc = escape xs $
+      if isAlphaNum x then
+        acc ++ [x]
+      else
+        acc <> "\\x" <> (flip showHex "" . ord $ x)
+
+jsEscape :: C8.ByteString -> TL.Text
+jsEscape = jsEscapeT . decodeUtf8
