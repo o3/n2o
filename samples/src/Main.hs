@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass, FlexibleContexts #-}
 module Main (main) where
 
 import Network.N2O
@@ -20,7 +20,7 @@ router cx@Context{cxReq=Req{reqPath=path}} =
                   "/ws/samples/static/index.html" -> index
                   "/ws/samples/static/about.html" -> about
                   _ -> index
-  in cx{cxHandler= \ev -> handle ev >> return Empty}
+  in cx{cxHandler=handle}
 
 index Init = do
   updateText "system" "What is your name?"
@@ -28,7 +28,7 @@ index Init = do
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")
-index _ = return ()
+index _ = lift $ putStrLn "Unknown event" >> return Empty
 about Init =
   updateText "app" "This is the N2O Hello World App"
-about _ = return ()
+about _ = lift $ putStrLn "Unknown event" >> return Empty

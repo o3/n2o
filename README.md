@@ -38,7 +38,7 @@ Nitro Protocol Demo
 ### Extensions and imports
 
 ```haskell
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass, FlexibleContexts #-}
 module Main (main) where
 
 import Network.N2O
@@ -53,31 +53,30 @@ import Prelude hiding (id)
 ### Static Server and Page Router
 
 ```haskell
-  data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
-
-  main = runServer "localhost" 3000 cx
-  cx = createCx router
-  router cx@Cx{cxReq=Req{reqPath=path}} =
-      let handler = case path of
-          "/ws/samples/static/index.html" -> index
-          "/ws/samples/static/about.html" -> about
-                                        _ -> index
-      in cx{cxHandler=handler}
+data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
+main = runServer "localhost" 3000 cx
+cx = createCx router
+router cx@Context{cxReq=Req{reqPath=path}} =
+  let handle = case path of
+                  "/ws/samples/static/index.html" -> index
+                  "/ws/samples/static/about.html" -> about
+                  _ -> index
+  in cx{cxHandler=handle}
 ```
 
 ### Nitro Page Sample
 
 ```haskell
-  index Init = do
-      updateText "system" "What is your name?"
-      wireEl button{id="send", postback=Just Greet, source=["name"]}
-
-  index (Message Greet) = do
-      Just name <- get "name" -- wf:q/1
-      updateText "system" ("Hello, " <> jsEscape name <> "!")
-
-  about Init =
-      updateText "app" "This is the N2O Hello World App"
+index Init = do
+  updateText "system" "What is your name?"
+  wireEl button{id="send", postback=Just Greet, source=["name"]}
+index (Message Greet) = do
+  Just name <- get "name" -- wf:q/1
+  updateText "system" ("Hello, " <> jsEscape name <> "!")
+index _ = lift $ putStrLn "Unknown event" >> return Empty
+about Init =
+  updateText "app" "This is the N2O Hello World App"
+about _ = lift $ putStrLn "Unknown event" >> return Empty
 ```
 
 Credits
