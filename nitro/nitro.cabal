@@ -11,8 +11,8 @@ license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:  README.md
-synopsis:       Nitro DSL
 category:       Network, N2O, Web
+synopsis:       Nitro Elements, Events and Actions
 
 source-repository head
   type: git

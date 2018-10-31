@@ -1,6 +1,6 @@
 name:           n2o-protocols
 version:        0.11.0
-description:    Bundle of N2O protocols
+description:    N2O Protocols: Interfaces and Implementations
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
@@ -12,7 +12,7 @@ build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:  README.md
 category:       Network, N2O, Web
-synopsis:       Bundle of N2O protocols
+synopsis:       N2O Protocols Starter Pack
 
 source-repository head
   type: git

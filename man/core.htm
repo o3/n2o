@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>INTERNAL</title>
+    <title>CORE</title>
     <link rel="stylesheet" href="../haskell.css" />
 </head>
 
@@ -19,7 +19,7 @@
 
 <header>
     <a href="../index.html"><img src="..//Synrc Neo.svg"></a>
-    <h1>INTERNAL</h1>
+    <h1>CORE</h1>
 </header>
 
 <main>
@@ -34,7 +34,9 @@
     </section>
     <section>
 
-<h3>PICKLER</h3>
+<h3>PICK</h3>
+
+<p>Performs AES CBC/128 symmetric cipher with HMAC.</p>
 
 <h4>pickle   :: (Show a) => a -> L.ByteString
 <h4>depickle :: (Read a) => L.ByteString -> Maybe a
@@ -42,7 +44,9 @@
     </section>
     <section>
 
-<h3>FORMATTER</h3>
+<h3>PACK</h3>
+
+<p>Encoder/Decode signature. See supported binary packagings.</p>
 
 <h4>type Encoder (a :: *) = a -> Msg</h4>
 <h4>type Decoder (a :: *) = Msg -> Maybe a</h4>
@@ -52,11 +56,11 @@
 
 <h3>LOOP</h3>
 
+<p>Top-level protocol loop for application embedding.</p>
+
 <h4>run :: forall f a b. Msg -> N2O f a b Return</h4>
 
-<p></p>
-
-<figure><figcaption>Listing 3. Haskell N2O Protocol Loop</figcaption><code>
+<!--figure><figcaption>Listing 3. Haskell N2O Protocol Loop</figcaption><code>
   protoRun msg = do
       ref <- ask
       cx@Cx{cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
@@ -72,7 +76,7 @@
                                        a -> loop (a:acc) msg protos decoder
                            _ -> loop acc msg protos decoder
 
-</code></figure>
+</code></figure-->
 
 </section>
 

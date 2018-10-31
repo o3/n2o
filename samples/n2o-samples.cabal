@@ -1,6 +1,6 @@
 name:           n2o-samples
 version:        0.11
-description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o-hs#readme>
+description:    N2O Haskell Sample
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
 author:         Marat Khafizov
