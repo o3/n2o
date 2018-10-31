@@ -1,3 +1,18 @@
+{-|
+Module      : Network.N2O.Protocols
+Description : N2O Protocols Starter
+Copyright   : (c) Marat Khafizov, 2018
+License     : BSD-3
+Maintainer  : xafizoff@gmail.com
+Stability   : experimental
+Portability : not portable
+
+N2O Protocol definitions and implementations, compatible with 
+the (Erlang version of the N2O)[https://github.com/synrc/n2o]
+
+For more infomation please check out the (manual)[https://haskell.n2o.space/man/protocols.htm]
+
+-}
 module Network.N2O.Protocols
  ( module Proto
  , module Network.N2O.Protocols.Nitro
@@ -20,6 +35,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Base64.Lazy as B64
 import Control.Monad (forM_)
 
+-- | Convert Binary Erlang Terms (BERT) to the 'N2OProto' specification
+readBert :: Term -> Maybe (N2OProto a)
 readBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) = Just $ N2ONitro (Proto.Init pid)
 readBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
     Just $ N2ONitro (Pickle source pickled (convert linked))
