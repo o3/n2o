@@ -1,6 +1,6 @@
 # N2O for Haskell
 
-[![Build Status](https://travis-ci.org/xafizoff/n2o-hs.svg?branch=master)](https://travis-ci.org/xafizoff/n2o-hs)
+[![Build Status](https://travis-ci.org/xafizoff/n2o.svg?branch=master)](https://travis-ci.org/xafizoff/n2o)
 
 Features
 --------
