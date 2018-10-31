@@ -20,6 +20,8 @@
 <header>
     <a href="../index.html"><img src="../Synrc Neo.svg"></a>
     <h1>PROTOCOLS</h1>
+
+
 </header>
 
 <main>
@@ -27,18 +29,10 @@
 
 <h3>INTRO</h3>
 
-<p></p>
+<p>The top-level sum of all available protocols is called federation.
+   Each protocol should define its data type and (optionally) the custom handler.</p>
 
-    </section>
-    <section>
-
-<h3>PROTOCOLS</h3>
-
-<p></p>
-
-<h4>FEDERATION</h4>
-
-<figure><figcaption>Listing 1. N2O Subrotocols</figcaption><code>
+<figure><figcaption>Listing 1. N2O Protocols</figcaption><code>
   data N2OProto a = N2ONitro   (Nitro a)
                   | N2OWorkflow (Flow a)
                   | N2OClient (Client a)
@@ -46,7 +40,16 @@
 
 </code></figure>
 
-<h4>CLIENT</h4>
+<p></p>
+
+    </section>
+    <section>
+
+<h3>CLIENT</h3>
+
+<p>Each protocol consists of sum of messages.
+   The CLIENT protocol sum has two messages:
+   client originated and server originated messages.</p>
 
 <figure><figcaption>Listing 2. Client/Server Protocol</figcaption><code>
   data Client a = Cli a
@@ -54,9 +57,12 @@
 
 </code></figure>
 
-<h4>NITRO</h4>
+<h3>NITRO</h3>
 
-<figure><figcaption>Listing 2. Nitro Protocol</figcaption><code>
+<p>Nitro protocol defines JavaScript postback container that
+   delivers the parameters of UI elements alogin its session start marker.</p>
+
+<figure><figcaption>Listing 3. Nitro Protocol</figcaption><code>
   data Nitro a = Init L.ByteString
                | Pickle { pickleSource  :: L.ByteString
                         , picklePickled :: L.ByteString
@@ -65,7 +71,10 @@
 
 </code></figure>
 
-<figure><figcaption>Listing 2. Protocol API</figcaption><code>
+<p>Nitro protocol also implements a custom protocol info function
+   which render actions accumulated after calling of page handler.</p>
+
+<figure><figcaption>Listing 4. Protocol API</figcaption><code>
   nitroProto :: (Show a) => Proto N2OProto a L.ByteString
   nitroInfo  :: (Show a) => N2OProto a -> N2O N2OProto a L.ByteString Return
 
