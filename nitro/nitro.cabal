@@ -1,16 +1,18 @@
 name:           nitro
-version:        0.11
-description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o#readme>
+version:        0.11.0
+description:    Nitro DSL
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
 maintainer:     xafizoff@gmail.com
-copyright:      All rights reserved (c)
+copyright:      2018 Marat Khafizov (c)
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:  README.md
+synopsis:       Nitro DSL
+category:       Network, N2O, Web
 
 source-repository head
   type: git
@@ -24,13 +26,13 @@ library
   hs-source-dirs:
       src
   build-depends: base >= 4.7 && < 5
-               , n2o
-               , text
-               , bytestring
-               , binary
-               , bert
-               , fmt
-               , containers
-               , base64-bytestring
+               , n2o == 0.11.0
+               , text >= 1.2
+               , bytestring >= 0.10
+               , binary >= 0.5
+               , bert >= 1.2
+               , fmt >= 0.6.1
+               , containers >= 0.5
+               , base64-bytestring >= 1.0
   default-language: Haskell2010
 
