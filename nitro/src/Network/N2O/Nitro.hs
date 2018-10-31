@@ -188,18 +188,15 @@ updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a (Result a)
 updateText target s = wire
   (ARaw $ encodeUtf8 ("qi('" +| decodeUtf8 target |+ "').innerText='" +| s |+ "'"))
 
-{-insertBottom :: Nitro m => String -> Element -> m ()
+insertBottom :: (B.Binary a) => BL.ByteString -> Element a -> N2O f a (Result a)
 insertBottom target elem = do
   content <- renderElement elem
-  acs <- actions
-  let tag = "div" :: String
+  let tag = "div" :: TL.Text
       action =
         "(function(){ var div = qn('" +| tag |+ "'); div.innerHTML = '" +|
-        content |+ "';qi('" +| target |+ "').appendChild(div.firstChild); })();"
-  
-  clear
-  wire $ T.pack action
-  forM_ acs wire-}
+        decodeUtf8 content |+ "';qi('" +|
+        decodeUtf8 target |+ "').appendChild(div.firstChild); })();"
+  wire $ ARaw $ encodeUtf8 action
 
 -- | Escape untrusted text to prevent XSS
 jsEscapeT :: TL.Text -> TL.Text
