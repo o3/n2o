@@ -8,7 +8,7 @@ Stability   : experimental
 Portability : not portable
 
 N2O Protocol definitions and implementations, compatible with 
-the (Erlang version of the N2O)[https://github.com/synrc/n2o]
+the [Erlang version of the N2O](https://github.com/synrc/n2o)
 
 For more infomation please check out the (manual)[https://haskell.n2o.space/man/protocols.htm]
 
