@@ -12,6 +12,7 @@ import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
 import Network.N2O.Types
+import Network.N2O.Protocols.Types
 import Network.N2O.Core
 import Network.N2O.Web.WebSockets
 import Prelude hiding (takeWhile)
@@ -29,7 +30,7 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
-runServer :: String -> Int -> Context f a -> IO ()
+runServer :: String -> Int -> Context N2OProto a -> IO ()
 runServer host port cx =
   withSocketsDo $ do
     addr <- resolve host (show port)
@@ -46,7 +47,7 @@ runServer host port cx =
       listen sock 10
       return sock
 
-acceptConnections :: HttpConf -> Context f a -> Socket -> IO ()
+acceptConnections :: HttpConf -> Context N2OProto a -> Socket -> IO ()
 acceptConnections conf cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -54,7 +55,7 @@ acceptConnections conf cx sock = do
             (\e@(SomeException _) -> print e))
   acceptConnections conf cx sock
 
-talk :: HttpConf -> Context f a -> Socket -> SockAddr -> IO ()
+talk :: HttpConf -> Context N2OProto a -> Socket -> SockAddr -> IO ()
 talk conf cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
@@ -102,19 +103,21 @@ parseReq bs = case parseOnly reqParser bs of
                 Right req -> Right req
 
 needUpgrade :: Req -> Bool
-needUpgrade req = case getHeader (C.pack "upgrade") (reqHead req) of
-                    Nothing -> False
-                    Just h -> (mk $ snd h) == (mk $ C.pack "websocket")
+needUpgrade req =
+  case getHeader (C.pack "upgrade") (reqHead req) of
+    Nothing -> False
+    Just h -> mk (snd h) == mk (C.pack "websocket")
 
 isKeepAlive :: Req -> Bool
-isKeepAlive req = case getHeader (C.pack "connection") (reqHead req) of
-                    Nothing -> False
-                    Just h -> (mk $ snd h) == (mk $ C.pack "keep-alive")
+isKeepAlive req =
+  case getHeader (C.pack "connection") (reqHead req) of
+    Nothing -> False
+    Just h -> mk (snd h) == mk (C.pack "keep-alive")
 
 getHeader :: BS.ByteString -> [Header] -> Maybe Header
 getHeader _ [] = Nothing
 getHeader k (h:hs)
-  | (mk k) == (mk $ fst h) = Just h
+  | mk k == mk (fst h) = Just h
   | otherwise = getHeader k hs
 
 crlf = (||) <$> (==10) <*> (==13)

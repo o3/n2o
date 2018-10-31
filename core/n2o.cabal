@@ -31,7 +31,6 @@ library
                , text >= 1.2
                , bytestring >=0.9
                , binary >=0.5
-               , bert >= 1.2
                , containers >= 0.5
   default-language: Haskell2010
 

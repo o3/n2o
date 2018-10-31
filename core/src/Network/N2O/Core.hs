@@ -3,7 +3,7 @@
 Module      : Network.N2O.Core
 Description : Core functions
 Copyright   : (c) Marat Khafizov, 2018
-License     : BSD-3
+License     : BSD 3-Clause
 Maintainer  : xafizoff@gmail.com
 Stability   : experimental
 Portability : not portable
@@ -11,9 +11,8 @@ Portability : not portable
 Core functions
 
 -}
-module Network.N2O.Core where
+module Network.N2O.Core (lift, ask, put, get, mkCx, mkReq, protoRun) where
 
-import Data.BERT
 import Data.IORef
 import qualified Data.Map.Strict as M
 import qualified Data.Binary as B
@@ -24,19 +23,6 @@ import Control.Exception (SomeException)
 import Network.N2O.Types
 import Data.Map.Strict (insert, (!?))
 
--- | @Term -> Msg@ encoder
-encodeBert :: Term -> Message
-encodeBert = BinaryMessage . B.encode
--- | @Term -> Msg@ decoder
-decodeBert :: Message -> Maybe Term
-decodeBert (BinaryMessage bin) =
-  case B.decodeOrFail bin of
-    Right (_,_,term) -> Just term
-    _ -> Nothing
-decodeBert (InitMessage pid) = Just $ TupleTerm [AtomTerm "init", BytelistTerm pid]
-decodeBert TerminateMessage = Just $ AtomTerm "terminate"
-decodeBert _ = Nothing
-
 -- | 'Context' constructor
 mkCx = Context
   { cxReq = undefined
@@ -45,8 +31,6 @@ mkCx = Context
   , cxDePickle = undefined
   , cxPickle = undefined
   , cxProtos = []
-  , cxEncoder = undefined
-  , cxDecoder = undefined
   , cxState = M.empty
   }
 
@@ -54,27 +38,21 @@ mkCx = Context
 mkReq = Req { reqPath = "/", reqMeth = "GET", reqVers = "HTTP/1.1", reqHead = [] }
 
 -- | NO-OP result
-nop :: Result
-nop = Reply (BinaryMessage BSL.empty)
+nop :: Result a
+nop = Empty
 
 -- | N2O protocol loop
-protoRun :: Message -> N2O f a Result
-protoRun msg = do
-  ref <- ask
-  cx@Context {cxProtos = protos, cxDecoder = decode} <- lift $ readIORef ref
-  loop [] msg protos decode
+protoRun :: f a -> [Proto f a] -> N2O f a (Result (f a))
+protoRun = loop []
   where
-    loop _ _ [] _ = return nop
-    loop acc msg (proto:protos) decoder = do
-      let mbDecoded = decoder msg
-      case mbDecoded of
-        Just decoded -> do
-          res <- protoInfo proto decoded
-          case res of
-            Unknown -> loop acc msg protos decoder
-            Reply msg1 -> return $ Reply msg1
-            a -> loop (a : acc) msg protos decoder
-        _ -> loop acc msg protos decoder
+    loop _ _ [] = return nop
+    loop acc msg (proto:protos) = do
+      res <- protoInfo proto msg
+      case res of
+        Unknown -> loop acc msg protos
+        Empty -> return Empty
+        Reply msg1 -> return $ Reply msg1
+        a -> loop (a : acc) msg protos
 
 -- | Lift underlying monad to the N2O monad
 lift :: m a -> N2OT state m a
@@ -83,6 +61,10 @@ lift m = N2OT (const m)
 -- | Get current state (env)
 ask :: (Monad m) => N2OT state m state
 ask = N2OT return
+
+getContext = do
+  ref <- ask
+  lift $ readIORef ref
 
 -- | Put data to the local state
 put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a ()

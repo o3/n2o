@@ -8,6 +8,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Binary as B
 import qualified Data.ByteString.Lazy.Char8 as CL8
 import Data.IORef
+import Data.BERT
 import Network.N2O.Core
 import Network.N2O.Types as Types
 import Network.N2O.Nitro
@@ -16,25 +17,31 @@ import Network.N2O.Protocols.Types as Proto
 nitroProto :: (Show a, B.Binary a) => Proto N2OProto a
 nitroProto = Proto { protoInfo = nitroInfo }
 
-nitroInfo :: (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a Result
+nitroInfo :: (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a (Result (N2OProto a))
 nitroInfo message = do
   ref <- ask
-  cx@Context {cxHandler = handle, cxEncoder = encode, cxDePickle = dePickle} <- lift $ readIORef ref
+  cx@Context {cxHandler = handle, cxDePickle = dePickle} <- lift $ readIORef ref
   lift $ putStrLn ("NITRO : " ++ show message)
   case message of
     msg@(N2ONitro (Proto.Init pid)) -> do
       handle Types.Init
       actions <- getActions
-      Reply . encode <$> renderActions' actions
+      rendered <- renderActions' actions
+      return $ Reply (reply rendered)
     msg@(N2ONitro (Pickle _source pickled linked)) -> do
       forM_ (M.toList linked) (uncurry put)
       case dePickle pickled of
         Just x -> do
           handle (Message x)
           actions <- getActions
-          Reply . encode <$> renderActions' actions
+          rendered <- renderActions' actions
+          return $ Reply (reply rendered)
         _ -> return Unknown
+    msg@(N2ONitro Done) -> do
+      handle Terminate
+      return Empty
   where
+    reply bs = Io bs L.empty
     renderActions' actions =
       case actions of
         [] -> return L.empty

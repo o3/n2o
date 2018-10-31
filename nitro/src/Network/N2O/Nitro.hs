@@ -71,25 +71,20 @@ data Event a = Event
 instance (B.Binary a) => B.Binary (Event a)
 
 -- | Wire an element
-wireEl :: (B.Binary a) => Element a -> N2O f a BL.ByteString
+wireEl :: (B.Binary a) => Element a -> N2O f a ()
 wireEl = wire . AElement
 
 -- | Wire action
 wire ::
      forall f a. (B.Binary a)
   => Action a
-  -> N2O f a BL.ByteString
+  -> N2O f a ()
 wire a = do
-  mbActions <- get "actions"
-  let (actions :: [Action a]) =
-        case mbActions of
-          Just actions -> actions
-          _ -> []
-  put "actions" (a : actions)
-  return ""
+  actions <- getActions
+  putActions (a : actions)
 
 -- | Render list of actions to JavaScript
-renderActions :: forall f a. (B.Binary a) => [Action a] -> N2O f a BL.ByteString
+renderActions :: (B.Binary a) => [Action a] -> N2O f a BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
@@ -191,7 +186,7 @@ textbox :: Element a
 textbox = baseElement {name = "input type=\"text\"", noBody = True}
 
 -- | Update text content of the element with the specified @id@
-updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a BL.ByteString
+updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a ()
 updateText target s = wire
   (ARaw $ encodeUtf8 ("qi('" +| decodeUtf8 target |+ "').innerText='" +| s |+ "'"))
 

@@ -8,7 +8,6 @@ import Network.N2O.Nitro
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
 import Prelude hiding (id)
-import Debug.Trace
 
 data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
 
@@ -17,11 +16,11 @@ main = runServer "localhost" 3000 cx
 cx = createCx router
 
 router cx@Context{cxReq=Req{reqPath=path}} =
-  let handler = case path of
+  let handle = case path of
                   "/ws/samples/static/index.html" -> index
                   "/ws/samples/static/about.html" -> about
                   _ -> index
-  in traceShow path cx{cxHandler=handler}
+  in cx{cxHandler= \ev -> handle ev >> return Empty}
 
 index Init = do
   updateText "system" "What is your name?"
@@ -29,5 +28,7 @@ index Init = do
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")
+index _ = return ()
 about Init =
   updateText "app" "This is the N2O Hello World App"
+about _ = return ()
