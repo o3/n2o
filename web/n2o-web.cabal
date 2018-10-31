@@ -1,6 +1,6 @@
 name:           n2o-web
 version:        0.11
-description:    Please see the README on GitHub at <https://github.com/xafizoff/n2o-hs#readme>
+description:    Poor man's WebSocket and HTTP static servers.
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
 author:         Marat Khafizov

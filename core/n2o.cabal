@@ -1,6 +1,6 @@
 name:           n2o
 version:        0.11.0
-description:    Embaddable Application Protocol Loop
+description:    Embeddable Application Protocol Loop
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
