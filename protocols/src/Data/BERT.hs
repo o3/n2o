@@ -4,7 +4,7 @@ Copyright (c) 2009 marius a. eriksen (marius@monkey.org)
 All rights reserved.
 -}
 {-# LANGUAGE OverlappingInstances, TypeSynonymInstances, FlexibleInstances #-}
-module Data.BERT where
+module Data.BERT (Term(..)) where
 
 import Control.Monad
 import Control.Applicative
