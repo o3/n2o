@@ -28,9 +28,8 @@ import Data.List (intercalate)
 import Data.Map.Strict ((!?))
 import Data.String
 import qualified Data.Text.Lazy as TL
-import Data.Text.Lazy.Encoding
-import Fmt
-import Fmt.Internal.Core
+import qualified Data.Text.Lazy.Encoding as TL
+import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
 import Network.N2O hiding (Event)
 import Numeric (showHex)
@@ -38,11 +37,11 @@ import Prelude hiding (id)
 
 -- | An HTML element
 data Element a
-  = Element { name      :: String
-            , id        :: String
+  = Element { name      :: BS.ByteString
+            , id        :: BS.ByteString
             , body      :: [Element a]
             , postback  :: Maybe a
-            , source    :: [String]
+            , source    :: [BS.ByteString]
             , noBody    :: Bool
             , noClosing :: Bool
             }
@@ -62,10 +61,10 @@ instance (B.Binary a) => B.Binary (Action a)
 
 -- | A JavaScript event
 data Event a = Event
-  { eventTarget   :: String
+  { eventTarget   :: BS.ByteString
   , eventPostback :: a
-  , eventType     :: String
-  , eventSource   :: [String]
+  , eventType     :: BS.ByteString
+  , eventSource   :: [BS.ByteString]
   } deriving (Show, Generic)
 
 instance (B.Binary a) => B.Binary (Event a)
@@ -110,7 +109,7 @@ renderElements (e:es) = do
 
 -- | Render element to the HTML
 renderElement :: (B.Binary a) => Element a -> N2O f a BL.ByteString
-renderElement (Text t) = return $ encodeUtf8 t
+renderElement (Text t) = return $ TL.encodeUtf8 t
 renderElement Element {..} = do
   case postback of
     Nothing -> return ()
@@ -121,16 +120,15 @@ renderElement Element {..} = do
     _ -> do
       content <- renderElements body
       return $
-        encodeUtf8 $
         if noBody
-          then "<" +| name |+ " " +| idProp id |+ "/>"
-          else "<" +| name |+ " " +| idProp id |+ ">" +| decodeUtf8 content |+ "</" +| name |+ ">"
+          then "<" <> BL.fromStrict name <> " " <> idProp id <> "/>"
+          else "<" <> BL.fromStrict name <> " " <> idProp id <> ">"
+                <> content <> "</" <> BL.fromStrict name <> ">"
   where
-    idProp :: String -> String
     idProp x =
       if x == ""
         then ""
-        else "id=\"" +| x |+ "\""
+        else "id=\"" <> BL.fromStrict x <> "\""
 
 -- | Render event
 renderEvent :: Event a -> N2O f a BL.ByteString
@@ -139,18 +137,19 @@ renderEvent Event {..} = do
   cx@Context {cxPickle = pickle} <- lift $ readIORef ref
   case eventSource of
     [] -> return BL.empty
-    src -> return $ encodeUtf8 $
-            "{ var x=qi('" +| eventTarget |+ "'); x && x.addEventListener('"
-            +| eventType |+ "',function(event){ if (validateSources("
-            +| strJoin (map (\x -> "'" ++ x ++  "'") eventSource) |+
-            ")) { ws.send(enc(tuple(atom('pickle'),bin('" +| eventTarget |+ "'),bin('"
-            +| decodeUtf8 (pickle eventPostback) |+ "'),"
-            +| strJoin (map renderSource src) |+
-            "))); } else console.log('Validation error'); })}"
+    src ->
+      return $
+      "{ var x=qi('" <> BL.fromStrict eventTarget <> "'); x && x.addEventListener('" <> BL.fromStrict eventType <>
+      "',function(event){ if (validateSources(" <> strJoin (map (\x -> "'" <> x <> "'") src) <>
+      ")) { ws.send(enc(tuple(atom('pickle'),bin('" <> BL.fromStrict eventTarget <>
+      "'),bin('" <> pickle eventPostback <>
+      "')," <> strJoin (map renderSource src) <>
+      "))); } else console.log('Validation error'); })}"
   where
-    renderSource s = "tuple(atom('" +| s |+ "'),querySource('" +| s |+ "'))"
-    strJoin [] = "[]"
-    strJoin l = "[" ++ intercalate "," l ++ "]"
+    renderSource :: BS.ByteString -> BS.ByteString
+    renderSource s = "tuple(atom('" <> s <> "'),querySource('" <> s <> "'))"
+    strJoin :: [BS.ByteString] -> BL.ByteString
+    strJoin = BL.fromStrict . BS.intercalate ","
 
 -- | Element constructor
 baseElement :: Element a
@@ -184,19 +183,20 @@ textbox :: Element a
 textbox = baseElement {name = "input type=\"text\"", noBody = True}
 
 -- | Update text content of the element with the specified @id@
-updateText :: (B.Binary a) => BL.ByteString -> TL.Text -> N2O f a (Result a)
+updateText :: (B.Binary a) => BS.ByteString -> TL.Text -> N2O f a (Result a)
 updateText target s = wire
-  (ARaw $ encodeUtf8 ("qi('" +| decodeUtf8 target |+ "').innerText='" +| s |+ "'"))
+  (ARaw ("qi('" <> BL.fromStrict target <> "').innerText='"
+         <> TL.encodeUtf8 s <> "'"))
 
-insertBottom :: (B.Binary a) => BL.ByteString -> Element a -> N2O f a (Result a)
+insertBottom :: (B.Binary a) => BS.ByteString -> Element a -> N2O f a (Result a)
 insertBottom target elem = do
   content <- renderElement elem
-  let tag = "div" :: TL.Text
-      action =
-        "(function(){ var div = qn('" +| tag |+ "'); div.innerHTML = '" +|
-        decodeUtf8 content |+ "';qi('" +|
-        decodeUtf8 target |+ "').appendChild(div.firstChild); })();"
-  wire $ ARaw $ encodeUtf8 action
+  let action =
+        "(function(){ var div = qn('div'); div.innerHTML = '" <>
+        TL.decodeUtf8 content <> "';qi('" <>
+        TL.decodeUtf8 (BL.fromStrict target) <>
+        "').appendChild(div.firstChild); })();"
+  wire $ ARaw $ TL.encodeUtf8 action
 
 -- | Escape untrusted text to prevent XSS
 jsEscapeT :: TL.Text -> TL.Text
@@ -211,7 +211,7 @@ jsEscapeT t = TL.pack (escape (TL.unpack t) "")
 
 -- | Escape untrusted text to prevent XSS
 jsEscape :: CL8.ByteString -> TL.Text
-jsEscape = jsEscapeT . decodeUtf8
+jsEscape = jsEscapeT . TL.decodeUtf8
 
 -- | Default pickler
 defPickle :: (Show a) => a -> BL.ByteString

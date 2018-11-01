@@ -38,6 +38,5 @@ library
                , attoparsec >= 0.13.2
                , case-insensitive >= 1.2
                , containers >= 0.5
-               , fmt >= 0.1.6
                , base64-bytestring >= 1.0
   default-language: Haskell2010

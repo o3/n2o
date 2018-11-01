@@ -7,4 +7,3 @@ packages:
 - ./samples
 extra-deps:
 - bert-1.2.2.5
-- fmt-0.6.1
