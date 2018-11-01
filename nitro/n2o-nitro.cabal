@@ -1,11 +1,11 @@
-name:           nitro
+name:           n2o-nitro
 version:        0.11.0
 description:    Nitro DSL
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
 maintainer:     xafizoff@gmail.com
-copyright:      2018 Marat Khafizov (c)
+copyright:      (c) Marat Khafizov, 2018
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
