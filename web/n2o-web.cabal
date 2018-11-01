@@ -1,5 +1,5 @@
 name:           n2o-web
-version:        0.11.1
+version:        0.11.2
 description:    Poor man's WebSocket and HTTP static servers.
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
@@ -34,7 +34,6 @@ library
                , text >= 1.2
                , bytestring >= 0.10
                , binary >= 0.5
-               , bert >= 1.2
                , attoparsec >= 0.13.2
                , case-insensitive >= 1.2
                , containers >= 0.5

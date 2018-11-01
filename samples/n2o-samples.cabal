@@ -29,7 +29,6 @@ executable n2o-sample
               , n2o-web >= 0.11
               , n2o-protocols >= 0.11
               , n2o-nitro >= 0.11
-              , bert
               , binary
               , bytestring
               , text

@@ -5,5 +5,3 @@ packages:
 - ./protocols
 - ./web
 - ./samples
-extra-deps:
-- bert-1.2.2.5
