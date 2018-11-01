@@ -22,7 +22,7 @@ library
   exposed-modules:
                   Network.N2O.Nitro
   other-modules:
-      Paths_nitro
+      Paths_n2o_nitro
   hs-source-dirs:
       src
   build-depends: base >= 4.7 && < 5
