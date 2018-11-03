@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric,
-  ScopedTypeVariables #-}
+  ScopedTypeVariables, PatternSynonyms, ViewPatterns #-}
 
 {-|
 Module      : Network.N2O.Nitro
@@ -198,20 +198,47 @@ insertBottom target elem = do
         "').appendChild(div.firstChild); })();"
   wire $ ARaw $ TL.encodeUtf8 action
 
--- | Escape untrusted text to prevent XSS
-jsEscapeT :: TL.Text -> TL.Text
-jsEscapeT t = TL.pack (escape (TL.unpack t) "")
-  where
-    escape "" acc = acc
-    escape (x:xs) acc =
-      escape xs $
-      if isAlphaNum x
-        then acc ++ [x]
-        else acc <> "\\x" <> (flip showHex "" . ord $ x)
+infixr 5 :<
+pattern b :< bs  <- (TL.uncons -> Just (b, bs))
+pattern TEmpty   <- (TL.uncons -> Nothing)
 
 -- | Escape untrusted text to prevent XSS
 jsEscape :: CL8.ByteString -> TL.Text
 jsEscape = jsEscapeT . TL.decodeUtf8
+
+-- | Escape untrusted text to prevent XSS
+jsEscapeT :: TL.Text -> TL.Text
+jsEscapeT t = escape t TL.empty
+  where
+    escape TEmpty acc = acc
+    escape (x :< xs) acc = escape xs $
+      if isAlphaNum x then
+        TL.snoc acc x
+      else
+        acc <> "\\x" <> TL.pack (flip showHex "" . ord $ x)
+
+htmlEscape :: TL.Text -> TL.Text
+htmlEscape t = escape t TL.empty
+  where
+    escape TEmpty acc = acc
+    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
+    escapeChar '&' = "&amp;"
+    escapeChar '<' = "&lt;"
+    escapeChar '>' = "&gt;"
+    escapeChar '"' = "&quot;"
+    escapeChar '\'' = "&#x27;"
+    escapeChar '/' = "&#x2F;"
+    escapeChar x = TL.singleton x
+
+htmlEscapeAggressive :: TL.Text -> TL.Text
+htmlEscapeAggressive t = escape t TL.empty
+  where
+    escape TEmpty acc = acc
+    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
+    escapeChar x
+      | isAlphaNum x || ord x > 255 = TL.singleton x
+      | otherwise = "&#x" <> TL.pack (flip showHex "" . ord $ x) <> ";"
+
 
 -- | Default pickler
 defPickle :: (Show a) => a -> BL.ByteString

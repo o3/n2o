@@ -21,6 +21,7 @@ source-repository head
 library
   exposed-modules:
                   Network.N2O.Nitro
+                , Network.N2O.Nitro.Elements
   other-modules:
       Paths_n2o_nitro
   hs-source-dirs:
