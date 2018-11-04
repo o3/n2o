@@ -16,19 +16,19 @@ import Prelude hiding (id,max,min)
      id          :: BS.ByteString\
    , validation  :: BS.ByteString,             validate    :: BS.ByteString\
    , class_      :: [BS.ByteString],           style       :: BS.ByteString\
-   , source      :: [BS.ByteString],           onClick     :: BS.ByteString\
-   , onMouseOver :: BS.ByteString,             onKeyPress  :: BS.ByteString\
-   , onBlur      :: BS.ByteString,             onChange    :: BS.ByteString\
-   , onKeyUp     :: BS.ByteString,             onKeyDown   :: BS.ByteString\
-   , onFocus     :: BS.ByteString,             dataFields  :: [(BS.ByteString, BS.ByteString)]\
+   , source      :: [BS.ByteString],           onclick     :: BS.ByteString\
+   , onmouseover :: BS.ByteString,             onkeypress  :: BS.ByteString\
+   , onblur      :: BS.ByteString,             onchange    :: BS.ByteString\
+   , onkeyup     :: BS.ByteString,             onkeydown   :: BS.ByteString\
+   , onfocus     :: BS.ByteString,             dataFields  :: [(BS.ByteString, BS.ByteString)]\
    , body        :: [Element a],               role        :: BS.ByteString\
-   , tabIndex    :: Integer,                   htmlTag     :: BS.ByteString\
+   , tabindex    :: Integer,                   htmlTag     :: BS.ByteString\
    , title       :: T.Text,                    postback    :: Maybe a
 
 #define ELEMENT_BASE_DEFAULTS()\
    id="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
-  ,onFocus="",onBlur="",onChange="",onClick="",onKeyDown="",onKeyUp="",onKeyPress="",onMouseOver=""\
-  ,tabIndex=0,validation="",validate="",source=[],role="",title="",htmlTag=undefined
+  ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
+  ,tabindex=0,validation="",validate="",source=[],role="",title="",htmlTag=undefined
 
 #define CONTROL_BASE()\
   ELEMENT_BASE()
