@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric, OverloadedStrings, CPP #-}
-module Web.Nitro.Elements (Element(..),button,render) where
+module Web.Nitro.Elements (Element(..)) where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -9,34 +9,15 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as CL8
-import Web.Nitro.Internal
 import Web.Nitro.Tags
 import GHC.Generics (Generic)
 import Prelude hiding (id,max,min)
 
-#define ELEMENT_BASE()\
-     id_         :: BS.ByteString\
-   , validation  :: BS.ByteString,             validate    :: BS.ByteString\
-   , class_      :: [BS.ByteString],           style       :: BS.ByteString\
-   , source      :: [BS.ByteString],           onclick     :: BS.ByteString\
-   , onmouseover :: BS.ByteString,             onkeypress  :: BS.ByteString\
-   , onblur      :: BS.ByteString,             onchange    :: BS.ByteString\
-   , onkeyup     :: BS.ByteString,             onkeydown   :: BS.ByteString\
-   , onfocus     :: BS.ByteString,             dataFields  :: [(BS.ByteString, BS.ByteString)]\
-   , body        :: [Element a],               role        :: BS.ByteString\
-   , tabindex    :: Integer,                   htmlTag     :: BS.ByteString\
-   , title       :: T.Text,                    postback    :: Maybe a\
-   , lang        :: BS.ByteString,             contenteditable :: Bool
+#include "nitro.h"
 
-#define ELEMENT_BASE_DEFAULTS()\
-   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
-  ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
-  ,tabindex=0,validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
-
-#define ELEMENT_BASE_DEFAULTS1() ELEMENT_BASE_DEFAULTS(),htmlTag=""
-
-#define CONTROL_BASE()\
-  ELEMENT_BASE()
+type Renderer a = Element a -> BL.ByteString
+instance Show (Renderer a) where
+  show _ = "Renderer"
 
 data Element a =
    MkBase
@@ -126,10 +107,7 @@ data Element a =
  deriving (Show, Generic)
 
 base :: Element a
-base = MkBase{ELEMENT_BASE_DEFAULTS(),htmlTag=""}
-
-literal :: Element a
-literal = MkLiter{ELEMENT_BASE_DEFAULTS1(),htmlEncode=True,text=""}
+base = MkBase{ELEMENT_BASE_DEFAULTS1()}
 
 panel :: Element a
 panel = base{htmlTag="div"}
@@ -201,10 +179,6 @@ video :: Element a
 video = MkVideo{ELEMENT_BASE_DEFAULTS1(),autoplay=False,controls="",height="",loop="",mediagroup="",muted=""
                ,poster="",preload="",src="",width=""}
 
-button:: Element a
-button = MkButton{ELEMENT_BASE_DEFAULTS1(),autofocus=True,disabled=False,form="",formaction="",formmethod=""
-                 ,formtarget="",formnovalidate=False,formenctype="",name="",type_="button",value=""}
-
 fieldset :: Element a
 fieldset = MkFielset{ELEMENT_BASE_DEFAULTS1(),disabled=False,form="",name="",legend=""}
 
@@ -244,19 +218,9 @@ textarea :: Element a
 textarea = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",dirname="",disabled=False,form=""
                      ,maxlength="",name="",placeholder="",readonly=False,required=False,rows="",wrap="",value=""}
 
-render :: Element a -> BL.ByteString
-render (MkLiter{htmlEncode=htmlEncode,text=text}) =
-  TL.encodeUtf8 $ if htmlEncode then htmlEscape text else text
-render el@MkButton{} =
-  let content_ = mconcat $ fmap render (body el) in
-  emitTag "button" content_ ([("id",    id_ el),           ("class",   BS.intercalate " " (class_ el))
-                             ,("style", style el),        ("name",     name el)
-                             ,("onchange", onchange el),  ("type",     type_ el)
-                             ,("onclick",  onclick el),   ("disabled", if disabled el then "disabled" else "")
-                             ,("value",  value el)
-                             ] ++ dataFields el)
-render el =
-  let content_ = mconcat $ fmap render (body el) in
+defaultRender :: Element a -> BL.ByteString
+defaultRender el =
+  let content_ = mconcat $ fmap (renderer el) (body el) in
   emitTag (htmlTag el) content_ ([("id",    id_ el),   ("class",    BS.intercalate " " (class_ el))
                                  ,("style", style el), ("title",    T.encodeUtf8 $ title el)
                                  ,("lang",  lang el),  ("tabindex", C8.pack $ show $ tabindex el)
