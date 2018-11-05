@@ -17,20 +17,10 @@ module Network.N2O.Protocols
  ( module Proto
  , module Network.N2O.Protocols.Nitro
 -- , module Network.N2O.Protocols.Client
- , createCx) where
+ ) where
 
 import Network.N2O.Types as Types
 import Network.N2O.Protocols.Types as Proto
 import Network.N2O.Core
 import Web.Nitro
 import Network.N2O.Protocols.Nitro
-
--- | Create context with specified @router@ middleware
-createCx :: (Show a, Read a) => (Context N2OProto a N2O -> Context N2OProto a N2O) -> Context N2OProto a N2O
-createCx router = mkCx
-  { cxMiddleware = [router]
-  , cxProtos = [nitroProto]
-  , cxDePickle = defDePickle
-  , cxPickle = defPickle
-  }
-
