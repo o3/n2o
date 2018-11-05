@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric, OverloadedStrings, CPP #-}
-module Web.Nitro.Elements where
+module Web.Nitro.Elements (Element(..),button,render) where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
