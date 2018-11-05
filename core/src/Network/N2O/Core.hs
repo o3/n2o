@@ -15,7 +15,6 @@ module Network.N2O.Core (lift, ask, mkCx, mkReq, protoRun, {-put, get, getContex
 
 import Data.IORef
 import qualified Data.Map.Strict as M
-import qualified Data.Binary as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL

@@ -5,10 +5,8 @@ import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
 import Web.Nitro
-import GHC.Generics (Generic)
-import Data.Binary (Binary)
 
-data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
+data Example = Greet deriving (Show, Eq, Read)
 
 main = runServer "localhost" 3000 cx
 

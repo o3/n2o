@@ -14,7 +14,6 @@ Basic types
 -}
 module Network.N2O.Types where
 
-import qualified Data.Binary as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import Data.IORef

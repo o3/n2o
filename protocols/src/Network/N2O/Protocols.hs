@@ -26,6 +26,7 @@ import Web.Nitro
 import Network.N2O.Protocols.Nitro
 
 -- | Create context with specified @router@ middleware
+createCx :: (Show a, Read a) => (Context N2OProto a N2O -> Context N2OProto a N2O) -> Context N2OProto a N2O
 createCx router = mkCx
   { cxMiddleware = [router]
   , cxProtos = [nitroProto]
