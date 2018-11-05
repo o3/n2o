@@ -15,7 +15,6 @@ import qualified Data.ByteString.Lazy.Char8 as LC8
 import Data.CaseInsensitive (mk)
 import Data.IORef
 import Data.Maybe (fromJust)
-import qualified Data.Map.Strict as MW
 import qualified Data.Map.Strict as M
 import qualified Data.Text.Lazy as T
 import Data.Text.Lazy.Encoding
