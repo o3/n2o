@@ -45,8 +45,6 @@ import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
 import Web.Nitro
-
-data Example = Greet deriving (Show, Eq, Read)
 ```
 
 ### Static Server and Page Router
