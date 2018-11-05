@@ -3,7 +3,7 @@ Copyright (c) 2009 marius a. eriksen (marius@monkey.org)
           (c) 2013 Roman Cheplyaka
 All rights reserved.
 -}
-{-# LANGUAGE OverlappingInstances, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, LambdaCase #-}
 module Data.BERT (Term(..)) where
 
 import Control.Monad
@@ -51,15 +51,15 @@ decomposeTime t = (mS, s, uS)
   where
     d = diffUTCTime t zeroHour
     (mS, s) = floor d `divMod` 1000000
-    uS = floor $ 1000000 * (snd $ properFraction d)
+    uS = floor $ 1000000 * snd (properFraction d)
 
 composeTime :: (Int, Int, Int) -> UTCTime
 composeTime (mS, s, uS) = addUTCTime seconds zeroHour
   where
-    mS'     = fromIntegral mS
-    s'      = fromIntegral s
-    uS'     = fromIntegral uS
-    seconds = ((mS' * 1000000) + s' + (uS' / 1000000))
+    mS' = fromIntegral mS
+    s' = fromIntegral s
+    uS' = fromIntegral uS
+    seconds = (mS' * 1000000) + s' + (uS' / 1000000)
 
 -- Another design would be to split the Term type into
 -- SimpleTerm|CompositeTerm, and then do everything in one go, but
@@ -184,8 +184,7 @@ instance (Ord k, BERT k, BERT v) => BERT (Map k v) where
 -- Binary encoding & decoding.
 instance Binary Term where
   put term = putWord8 131 >> putTerm term
-  get      = getWord8 >>= \magic ->
-               case magic of
+  get      = getWord8 >>= \case
                  131 -> getTerm
                  _   -> fail "bad magic"
 
