@@ -25,12 +25,13 @@ import Prelude hiding (id,max,min)
    , onfocus     :: BS.ByteString,             dataFields  :: [(BS.ByteString, BS.ByteString)]\
    , body        :: [Element a],               role        :: BS.ByteString\
    , tabindex    :: Integer,                   htmlTag     :: BS.ByteString\
-   , title       :: T.Text,                    postback    :: Maybe a
+   , title       :: T.Text,                    postback    :: Maybe a\
+   , lang        :: BS.ByteString,             contenteditable :: Bool
 
 #define ELEMENT_BASE_DEFAULTS()\
    id="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
   ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
-  ,tabindex=0,validation="",validate="",source=[],role="",title=""
+  ,tabindex=0,validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
 
 #define ELEMENT_BASE_DEFAULTS1() ELEMENT_BASE_DEFAULTS(),htmlTag=""
 
@@ -248,4 +249,8 @@ render (MkLiter{htmlEncode=htmlEncode,text=text}) =
   TL.encodeUtf8 $ if htmlEncode then htmlEscape text else text
 render el =
   let content_ = mconcat $ fmap render (body el) in
-  emitTag (htmlTag el) content_ (dataFields el)
+  emitTag (htmlTag el) content_ ([("id",    id el),    ("class",    BS.intercalate " " (class_ el))
+                                 ,("style", style el), ("title",    T.encodeUtf8 $ title el)
+                                 ,("lang",  lang el),  ("tabindex", C8.pack $ show $ tabindex el)
+                                 ,("role",  role el),  ("contenteditable", if contenteditable el then "true" else "false")
+                                 ] ++ dataFields el)
