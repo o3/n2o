@@ -5,8 +5,6 @@ import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
 import Web.Nitro
-import Web.Nitro.Elements
-import Web.Nitro.Internal
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
 

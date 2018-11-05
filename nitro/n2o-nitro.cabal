@@ -22,8 +22,7 @@ library
   exposed-modules:
                   Web.Nitro
                 , Web.Nitro.Elements
-                , Web.Nitro.Elements.Button
-                , Web.Nitro.Elements.Literal
+                , Web.Nitro.Elements.Impl
                 , Web.Nitro.Tags
                 , Web.Nitro.Internal
   include-dirs: include

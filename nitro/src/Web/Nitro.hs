@@ -14,13 +14,11 @@ module Web.Nitro
  ( module Web.Nitro.Elements
  , module Web.Nitro.Internal
  , module Web.Nitro.Tags
- , module Web.Nitro.Elements.Button
- , module Web.Nitro.Elements.Literal
+ , module Web.Nitro.Elements.Impl
  ) where
 
 import Web.Nitro.Elements
 import Web.Nitro.Internal
 import Web.Nitro.Tags
-import Web.Nitro.Elements.Button
-import Web.Nitro.Elements.Literal
+import Web.Nitro.Elements.Impl
 
