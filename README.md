@@ -38,22 +38,21 @@ Nitro Protocol Demo
 ### Extensions and imports
 
 ```haskell
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
 import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
-import Network.N2O.Nitro
-import GHC.Generics (Generic)
-import Data.Binary (Binary)
-import Prelude hiding (id)
+import Web.Nitro
+
+data Example = Greet deriving (Show, Eq, Read)
 ```
 
 ### Static Server and Page Router
 
 ```haskell
-data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
+data Example = Greet deriving (Show, Eq, Read)
 main = runServer "localhost" 3000 cx
 cx = createCx router
 router cx@Context{cxReq=Req{reqPath=path}} =
@@ -69,14 +68,16 @@ router cx@Context{cxReq=Req{reqPath=path}} =
 ```haskell
 index Init = do
   updateText "system" "What is your name?"
-  wireEl button{id="send", postback=Just Greet, source=["name"]}
+  wireEl button{id_="send", postback=Just Greet, source=["name"]}
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")
 index _ = lift $ putStrLn "Unknown event" >> return Empty
 about Init =
   updateText "app" "This is the N2O Hello World App"
-about _ = lift $ putStrLn "Unknown event" >> return Empty
+about ev = do
+  lift $ putStrLn ("Unknown event " <> show ev)
+  return Empty
 ```
 
 Credits
