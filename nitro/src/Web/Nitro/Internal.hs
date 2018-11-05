@@ -14,9 +14,28 @@ import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Encoding as T
 import Data.Char (isAlphaNum, ord, toLower)
 import Data.IORef
+import Data.Maybe (fromJust, fromMaybe)
+import qualified Data.Map.Strict as M
+import Data.Map.Strict((!?))
 import Numeric (showHex)
 import Network.N2O hiding (Event)
 import Web.Nitro.Elements (Element(..))
+import qualified Data.Vault.Lazy as V
+import System.IO.Unsafe
+
+type N2O = N2OT (IORef V.Vault) IO
+
+actionsKey :: V.Key [Action a]
+actionsKey = unsafePerformIO V.newKey
+{-# NOINLINE actionsKey #-}
+
+contextKey :: V.Key (Context f a m)
+contextKey = unsafePerformIO V.newKey
+{-# NOINLINE contextKey #-}
+
+dictKey :: V.Key (M.Map BS.ByteString BL.ByteString)
+dictKey = unsafePerformIO V.newKey
+{-# NOINLINE dictKey #-}
 
 infixr 5 :<
 pattern b :< bs  <- (TL.uncons -> Just (b, bs))
@@ -59,16 +78,12 @@ htmlEscapeAggressive t = escape t TL.empty
       | isAlphaNum x || ord x > 255 = TL.singleton x
       | otherwise = "&#x" <> TL.pack (flip showHex "" . ord $ x) <> ";"
 
-
 -- | Action that can be rendered as JavaScript events
 data Action a
   = AEvent (Event a)
   | AElement (Element a)
   | ARaw BL.ByteString
   deriving (Show)
-
--- | Custom data type
-type NitroPlugin a = [Action a]
 
 -- | A JavaScript event
 data Event a = Event
@@ -79,18 +94,18 @@ data Event a = Event
   } deriving (Show)
 
 -- | Wire an element
-wireEl :: Element a -> N2O f a (NitroPlugin a) (Result a)
+wireEl :: Element a -> N2O (Result a)
 wireEl = wire . AElement
 
 -- | Wire action
-wire :: Action a -> N2O f a (NitroPlugin a) (Result a)
+wire :: Action a -> N2O (Result a)
 wire a = do
   actions <- getActions
   putActions (a : actions)
   return Empty
 
 -- | Render list of actions to JavaScript
-renderActions :: [Action a] -> N2O f a (NitroPlugin a) BL.ByteString
+renderActions :: [Action a] -> N2O BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
@@ -98,7 +113,7 @@ renderActions (a:as) = do
   return (r <> ";" <> rs)
 
 -- | Render an action
-renderAction :: Action a -> N2O f a (NitroPlugin a) BL.ByteString
+renderAction :: Action a -> N2O BL.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el) = do
@@ -109,7 +124,7 @@ renderAction (AElement el) = do
   return ""
 
 -- | Render list of elements to the HTML
-renderElements :: [Element a] -> N2O f a (NitroPlugin a) BL.ByteString
+renderElements :: [Element a] -> N2O BL.ByteString
 renderElements [] = return ""
 renderElements (e:es) = do
   r <- renderElement e
@@ -117,14 +132,15 @@ renderElements (e:es) = do
   return (r <> rs)
 
 -- | Render element to the HTML
-renderElement :: Element a -> N2O f a (NitroPlugin a) BL.ByteString
+renderElement :: Element a -> N2O BL.ByteString
 renderElement el = return $ renderer el el
 
 -- | Render event
-renderEvent :: Event a -> N2O f a (NitroPlugin a) BL.ByteString
+renderEvent :: Event a -> N2O BL.ByteString
 renderEvent Event {..} = do
   ref <- ask
-  cx@Context {cxPickle = pickle} <- lift $ readIORef ref
+  vault <- lift $ readIORef ref
+  let Context{cxPickle=pickle} = fromJust $ V.lookup contextKey vault
   case eventSource of
     [] -> return BL.empty
     src ->
@@ -142,12 +158,12 @@ renderEvent Event {..} = do
     strJoin = BL.fromStrict . BS.intercalate ","
 
 -- | Update text content of the element with the specified @id@
-updateText :: BS.ByteString -> TL.Text -> N2O f a (NitroPlugin a) (Result a)
+updateText :: BS.ByteString -> TL.Text -> N2O (Result a)
 updateText target s = wire
   (ARaw ("qi('" <> BL.fromStrict target <> "').innerText='"
          <> TL.encodeUtf8 s <> "'"))
 
-insertBottom :: BS.ByteString -> Element a -> N2O f a (NitroPlugin a) (Result a)
+insertBottom :: BS.ByteString -> Element a -> N2O (Result a)
 insertBottom target elem = do
   content <- renderElement elem
   let action =
@@ -169,17 +185,37 @@ defDePickle bs =
     _ -> Nothing
 
 -- | Get action list from the local mutable state
-getActions :: N2O f a (NitroPlugin a) [Action a]
+getActions :: N2O [Action a]
 getActions = do
-  cx <- getContext
-  let mbActions = cxCustom cx
-  return $
-    case mbActions of
-      Just actions -> actions
-      _ -> []
+  ref <- ask
+  vault <- lift $ readIORef ref
+  return $ fromMaybe [] (V.lookup actionsKey vault)
 
 -- | Put actions to the local mutable state
-putActions :: [Action a] -> N2O f a (NitroPlugin a) ()
+putActions :: [Action a] -> N2O ()
 putActions actions = do
   ref <- ask
-  lift $ modifyIORef ref (\cx -> cx{cxCustom = Just actions})
+  lift $ modifyIORef ref (V.insert actionsKey actions)
+
+-- | Put data to the local state
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O ()
+put k v = do
+  ref <- ask
+  lift $ modifyIORef ref (V.adjust (M.insert k (B.encode v)) dictKey)
+
+-- | Get data from the local state
+get :: (B.Binary bin) => BS.ByteString -> N2O (Maybe bin)
+get k = do
+  ref <- N2OT return
+  vault <- lift $ readIORef ref
+  let m = fromJust $ V.lookup dictKey vault
+  case m !? k of
+    Just v -> return $ Just (B.decode v)
+    _ -> return Nothing
+
+
+getContext :: N2O (Context f a N2O)
+getContext = do
+  ref <- N2OT return
+  vault <- lift $ readIORef ref
+  return $ fromJust $ V.lookup contextKey vault
