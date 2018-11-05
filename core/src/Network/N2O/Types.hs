@@ -65,6 +65,7 @@ data Event a
   = Init
   | Message a
   | Terminate
+  deriving Show
 
 -- | Local mutable state
 type State f a = IORef (Context f a)

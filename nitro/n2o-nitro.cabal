@@ -23,6 +23,7 @@ library
                   Network.N2O.Nitro
                 , Network.N2O.Nitro.Elements
                 , Network.N2O.Nitro.Tags
+                , Network.N2O.Nitro.Internal
   other-modules:
       Paths_n2o_nitro
   hs-source-dirs:

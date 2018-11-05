@@ -5,6 +5,8 @@ import Network.N2O
 import Network.N2O.Web
 import Network.N2O.Protocols hiding (Init)
 import Network.N2O.Nitro
+import Network.N2O.Nitro.Elements
+import Network.N2O.Nitro.Internal
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
 import Prelude hiding (id)
@@ -31,4 +33,6 @@ index (Message Greet) = do
 index _ = lift $ putStrLn "Unknown event" >> return Empty
 about Init =
   updateText "app" "This is the N2O Hello World App"
-about _ = lift $ putStrLn "Unknown event" >> return Empty
+about ev = do
+  lift $ putStrLn ("Unknown event " <> show ev)
+  return Empty

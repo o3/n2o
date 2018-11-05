@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, OverloadedStrings, CPP #-}
 module Network.N2O.Nitro.Elements where
 
 import qualified Data.Text as T
@@ -9,7 +9,9 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as CL8
-import qualified Network.N2O.Nitro as Nitro
+import Network.N2O.Nitro.Internal
+import Network.N2O.Nitro.Tags
+import GHC.Generics (Generic)
 import Prelude hiding (id,max,min)
 
 #define ELEMENT_BASE()\
@@ -28,7 +30,9 @@ import Prelude hiding (id,max,min)
 #define ELEMENT_BASE_DEFAULTS()\
    id="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
   ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
-  ,tabindex=0,validation="",validate="",source=[],role="",title="",htmlTag=undefined
+  ,tabindex=0,validation="",validate="",source=[],role="",title=""
+
+#define ELEMENT_BASE_DEFAULTS1() ELEMENT_BASE_DEFAULTS(),htmlTag=""
 
 #define CONTROL_BASE()\
   ELEMENT_BASE()
@@ -118,126 +122,130 @@ data Element a =
  { ELEMENT_BASE(), autofocus::Bool, cols::BS.ByteString, dirname::BS.ByteString, disabled::Bool, form::BS.ByteString
  , maxlength::BS.ByteString, name::BS.ByteString, placeholder::BS.ByteString, readonly::Bool, required::Bool
  , rows::BS.ByteString, wrap::BS.ByteString, value::BS.ByteString }
- deriving (Show)
+ deriving (Show, Generic)
 
 base :: Element a
-base = MkBase{ELEMENT_BASE_DEFAULTS()}
+base = MkBase{ELEMENT_BASE_DEFAULTS(),htmlTag=""}
 
 literal :: Element a
-literal = MkLiter{ELEMENT_BASE_DEFAULTS(),htmlEncode=True,text=""}
+literal = MkLiter{ELEMENT_BASE_DEFAULTS1(),htmlEncode=True,text=""}
 
 panel :: Element a
 panel = base{htmlTag="div"}
 
 list :: Element a
-list = MkList{ELEMENT_BASE_DEFAULTS(),ordered=False}
+list = MkList{ELEMENT_BASE_DEFAULTS1(),ordered=False}
 
 dropDown :: Element a
-dropDown = MkDropDown{ELEMENT_BASE_DEFAULTS(),options=[],value="",multiple=False,disabled=False,name=""}
+dropDown = MkDropDown{ELEMENT_BASE_DEFAULTS1(),options=[],value="",multiple=False,disabled=False,name=""}
 
 radioGroup :: Element a
-radioGroup = base
+radioGroup = base{htmlTag="radiogroup"}
 
 spinner :: Element a
-spinner = MkSpinner{ELEMENT_BASE_DEFAULTS(),image="/priv/static/spinner.gif"}
+spinner = MkSpinner{ELEMENT_BASE_DEFAULTS1(),image="/priv/static/spinner.gif"}
 
 head :: Element a
-head = base
+head = base{htmlTag="head"}
 
 metaLink :: Element a
-metaLink = MkMetaLink{ELEMENT_BASE_DEFAULTS(),href="",hreflang="",media="",rel="",sizes="",type_=""}
+metaLink = MkMetaLink{ELEMENT_BASE_DEFAULTS1(),href="",hreflang="",media="",rel="",sizes="",type_=""}
 
 style_ :: Element a
-style_ = MkStyle{ELEMENT_BASE_DEFAULTS(),media="",scoped="",type_=""}
+style_ = MkStyle{ELEMENT_BASE_DEFAULTS1(),media="",scoped="",type_=""}
 
 title_ :: Element a
-title_ = base
+title_ = base{htmlTag="title"}
 
 del :: Element a
-del = MkEdit{ELEMENT_BASE_DEFAULTS(),cite="",datetime=""}
+del = MkEdit{ELEMENT_BASE_DEFAULTS(),cite="",datetime="",htmlTag="del"}
 
 ins :: Element a
-ins = del
+ins = del{htmlTag="ins"}
 
 area :: Element a
-area = MkArea{ELEMENT_BASE_DEFAULTS(),alt="",coords="",href="",hreflang="",media="",target="",rel="",shape="",type_=""}
+area = MkArea{ELEMENT_BASE_DEFAULTS1(),alt="",coords="",href="",hreflang="",media="",target="",rel="",shape="",type_=""}
 
 audio :: Element a
-audio = MkAudio{ELEMENT_BASE_DEFAULTS(),autoplay=True,controls="",loop="",mediagroup="",muted="",preload="",src="",width=""}
+audio = MkAudio{ELEMENT_BASE_DEFAULTS1(),autoplay=True,controls="",loop="",mediagroup="",muted="",preload="",src="",width=""}
 
 canvas :: Element a
-canvas = MkCanvas{ELEMENT_BASE_DEFAULTS(),height="",width=""}
+canvas = MkCanvas{ELEMENT_BASE_DEFAULTS1(),height="",width=""}
 
 embed :: Element a
-embed = MkEmbed{ELEMENT_BASE_DEFAULTS(),height="",width="",src="",type_=""}
+embed = MkEmbed{ELEMENT_BASE_DEFAULTS1(),height="",width="",src="",type_=""}
 
 iframe :: Element a
-iframe = MkIframe{ELEMENT_BASE_DEFAULTS(),height="",width="",src="",srcdoc="",name="",sandbox="",seamless=""}
+iframe = MkIframe{ELEMENT_BASE_DEFAULTS1(),height="",width="",src="",srcdoc="",name="",sandbox="",seamless=""}
 
 image_ :: Element a
-image_ = MkImage{ELEMENT_BASE_DEFAULTS(),alt="",height="",ismap="",src="",usemap=False,width="",image=""}
+image_ = MkImage{ELEMENT_BASE_DEFAULTS1(),alt="",height="",ismap="",src="",usemap=False,width="",image=""}
 
 map_ :: Element a
-map_ = MkMap{ELEMENT_BASE_DEFAULTS(),name=""}
+map_ = MkMap{ELEMENT_BASE_DEFAULTS1(),name=""}
 
 object_ :: Element a
-object_ = MkObject{ELEMENT_BASE_DEFAULTS(),data_="",form="",height="",name="",type_="",usemap=False,width=""}
+object_ = MkObject{ELEMENT_BASE_DEFAULTS1(),data_="",form="",height="",name="",type_="",usemap=False,width=""}
 
 param :: Element a
-param = MkParam{ELEMENT_BASE_DEFAULTS(),value="",name=""}
+param = MkParam{ELEMENT_BASE_DEFAULTS1(),value="",name=""}
 
 source_ :: Element a
-source_ = MkSource{ELEMENT_BASE_DEFAULTS(),media="",src="",type_=""}
+source_ = MkSource{ELEMENT_BASE_DEFAULTS1(),media="",src="",type_=""}
 
 track :: Element a
-track = MkTrack{ELEMENT_BASE_DEFAULTS(),default_="",kind="",src="",srclang="",label=""}
+track = MkTrack{ELEMENT_BASE_DEFAULTS1(),default_="",kind="",src="",srclang="",label=""}
 
 video :: Element a
-video = MkVideo{ELEMENT_BASE_DEFAULTS(),autoplay=False,controls="",height="",loop="",mediagroup="",muted=""
+video = MkVideo{ELEMENT_BASE_DEFAULTS1(),autoplay=False,controls="",height="",loop="",mediagroup="",muted=""
                ,poster="",preload="",src="",width=""}
 
 button:: Element a
-button = MkButton{ELEMENT_BASE_DEFAULTS(),autofocus=True,disabled=False,form="",formaction="",formmethod=""
+button = MkButton{ELEMENT_BASE_DEFAULTS1(),autofocus=True,disabled=False,form="",formaction="",formmethod=""
                  ,formtarget="",formnovalidate=False,formenctype="",name="",type_="button",value=""}
 
-datalist :: Element a
-datalist = base
-
 fieldset :: Element a
-fieldset = MkFielset{ELEMENT_BASE_DEFAULTS(),disabled=False,form="",name="",legend=""}
+fieldset = MkFielset{ELEMENT_BASE_DEFAULTS1(),disabled=False,form="",name="",legend=""}
 
 form_ :: Element a
-form_ = MkForm{ELEMENT_BASE_DEFAULTS(),accept_charset="",action="",autocomplete=False,enctype="",method="",name=""
+form_ = MkForm{ELEMENT_BASE_DEFAULTS1(),accept_charset="",action="",autocomplete=False,enctype="",method="",name=""
              ,novalidate=False,target=""}
 
 keygen :: Element a
-keygen = MkKeygen{ELEMENT_BASE_DEFAULTS(),autofocus=True,challenge="",disabled=False,form="",keytype="",name=""}
+keygen = MkKeygen{ELEMENT_BASE_DEFAULTS1(),autofocus=True,challenge="",disabled=False,form="",keytype="",name=""}
 
 legend_ :: Element a
-legend_ = base
+legend_ = base{htmlTag="legend"}
 
 label_ :: Element a
-label_ = MkLabel{ELEMENT_BASE_DEFAULTS(),for="",form=""}
+label_ = MkLabel{ELEMENT_BASE_DEFAULTS1(),for="",form=""}
 
 meter :: Element a
-meter = MkMeter{ELEMENT_BASE_DEFAULTS(),high="",low="",max="",min="",optimum="",value=""}
+meter = MkMeter{ELEMENT_BASE_DEFAULTS1(),high="",low="",max="",min="",optimum="",value=""}
 
 optgroup :: Element a
-optgroup = MkOptgroup{ELEMENT_BASE_DEFAULTS(),disabled=False,label=""}
+optgroup = MkOptgroup{ELEMENT_BASE_DEFAULTS1(),disabled=False,label=""}
 
 option :: Element a
-option = MkOption{ELEMENT_BASE_DEFAULTS(),disabled=False,label="",selected=False,value=""}
+option = MkOption{ELEMENT_BASE_DEFAULTS1(),disabled=False,label="",selected=False,value=""}
 
 output :: Element a
-output = MkOutput{ELEMENT_BASE_DEFAULTS(),for="",form="",name=""}
+output = MkOutput{ELEMENT_BASE_DEFAULTS1(),for="",form="",name=""}
 
 progress :: Element a
-progress = MkProgress{ELEMENT_BASE_DEFAULTS(),max="",value=""}
+progress = MkProgress{ELEMENT_BASE_DEFAULTS1(),max="",value=""}
 
 select :: Element a
-select = MkSelect{ELEMENT_BASE_DEFAULTS(),autofocus=False,disabled=False,form="",multiple=False,name=""
+select = MkSelect{ELEMENT_BASE_DEFAULTS1(),autofocus=False,disabled=False,form="",multiple=False,name=""
                  ,required=False,size=""}
 
 textarea :: Element a
-textarea = MkTextarea{ELEMENT_BASE_DEFAULTS(),autofocus=False,cols="",dirname="",disabled=False,form=""
+textarea = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",dirname="",disabled=False,form=""
                      ,maxlength="",name="",placeholder="",readonly=False,required=False,rows="",wrap="",value=""}
+
+render :: Element a -> BL.ByteString
+render (MkLiter{htmlEncode=htmlEncode,text=text}) =
+  TL.encodeUtf8 $ if htmlEncode then htmlEscape text else text
+render el =
+  let content_ = mconcat $ fmap render (body el) in
+  emitTag (htmlTag el) content_ (dataFields el)
