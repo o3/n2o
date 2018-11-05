@@ -29,6 +29,7 @@ library
   build-depends: base >= 4.7 && < 5
                , n2o == 0.11.*
                , n2o-protocols == 0.11.*
+               , n2o-nitro == 0.11.*
                , websockets >= 0.12.5
                , network >= 2.6
                , text >= 1.2

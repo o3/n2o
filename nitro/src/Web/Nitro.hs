@@ -44,6 +44,9 @@ data Action a
 
 instance (B.Binary a) => B.Binary (Action a)
 
+-- | Custom data type
+type NitroPlugin a = [Action a]
+
 -- | A JavaScript event
 data Event a = Event
   { eventTarget   :: BS.ByteString
@@ -55,18 +58,18 @@ data Event a = Event
 instance (B.Binary a) => B.Binary (Event a)
 
 -- | Wire an element
-wireEl :: (B.Binary a) => Element a -> N2O f a (Result a)
+wireEl :: (B.Binary a) => Element a -> N2O f a (NitroPlugin a) (Result a)
 wireEl = wire . AElement
 
 -- | Wire action
-wire :: forall f a. (B.Binary a) => Action a -> N2O f a (Result a)
+wire :: forall f a. (B.Binary a) => Action a -> N2O f a (NitroPlugin a) (Result a)
 wire a = do
   actions <- getActions
   putActions (a : actions)
   return Empty
 
 -- | Render list of actions to JavaScript
-renderActions :: (B.Binary a) => [Action a] -> N2O f a BL.ByteString
+renderActions :: (B.Binary a) => [Action a] -> N2O f a (NitroPlugin a) BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
@@ -74,7 +77,7 @@ renderActions (a:as) = do
   return (r <> ";" <> rs)
 
 -- | Render an action
-renderAction :: (B.Binary a) => Action a -> N2O f a BL.ByteString
+renderAction :: (B.Binary a) => Action a -> N2O f a (NitroPlugin a) BL.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el) = do
@@ -85,7 +88,7 @@ renderAction (AElement el) = do
   return ""
 
 -- | Render list of elements to the HTML
-renderElements :: (B.Binary a) => [Element a] -> N2O f a BL.ByteString
+renderElements :: (B.Binary a) => [Element a] -> N2O f a (NitroPlugin a) BL.ByteString
 renderElements [] = return ""
 renderElements (e:es) = do
   r <- renderElement e
@@ -93,11 +96,11 @@ renderElements (e:es) = do
   return (r <> rs)
 
 -- | Render element to the HTML
-renderElement :: (B.Binary a) => Element a -> N2O f a BL.ByteString
+renderElement :: (B.Binary a) => Element a -> N2O f a (NitroPlugin a) BL.ByteString
 renderElement el = return $ render el
 
 -- | Render event
-renderEvent :: Event a -> N2O f a BL.ByteString
+renderEvent :: Event a -> N2O f a (NitroPlugin a) BL.ByteString
 renderEvent Event {..} = do
   ref <- ask
   cx@Context {cxPickle = pickle} <- lift $ readIORef ref
@@ -118,12 +121,12 @@ renderEvent Event {..} = do
     strJoin = BL.fromStrict . BS.intercalate ","
 
 -- | Update text content of the element with the specified @id@
-updateText :: (B.Binary a) => BS.ByteString -> TL.Text -> N2O f a (Result a)
+updateText :: (B.Binary a) => BS.ByteString -> TL.Text -> N2O f a (NitroPlugin a) (Result a)
 updateText target s = wire
   (ARaw ("qi('" <> BL.fromStrict target <> "').innerText='"
          <> TL.encodeUtf8 s <> "'"))
 
-insertBottom :: (B.Binary a) => BS.ByteString -> Element a -> N2O f a (Result a)
+insertBottom :: (B.Binary a) => BS.ByteString -> Element a -> N2O f a (NitroPlugin a) (Result a)
 insertBottom target elem = do
   content <- renderElement elem
   let action =
@@ -145,14 +148,17 @@ defDePickle bs =
     _ -> Nothing
 
 -- | Get action list from the local mutable state
-getActions :: (B.Binary a) => N2O f a [Action a]
+getActions :: N2O f a (NitroPlugin a) [Action a]
 getActions = do
-  mbActions <- get (C8.pack "actions")
+  cx <- getContext
+  let mbActions = cxCustom cx
   return $
     case mbActions of
       Just actions -> actions
       _ -> []
 
 -- | Put actions to the local mutable state
-putActions :: (B.Binary a) => [Action a] -> N2O f a ()
-putActions = put (C8.pack "actions")
+putActions :: [Action a] -> N2O f a (NitroPlugin a) ()
+putActions actions = do
+  ref <- ask
+  lift $ modifyIORef ref (\cx -> cx{cxCustom = Just actions})

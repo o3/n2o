@@ -11,7 +11,7 @@ Portability : not portable
 Core functions
 
 -}
-module Network.N2O.Core (lift, ask, put, get, mkCx, mkReq, protoRun) where
+module Network.N2O.Core (lift, ask, put, get, mkCx, mkReq, protoRun, getContext) where
 
 import Data.IORef
 import qualified Data.Map.Strict as M
@@ -32,6 +32,7 @@ mkCx = Context
   , cxPickle = undefined
   , cxProtos = []
   , cxState = M.empty
+  , cxCustom = Nothing
   }
 
 -- | 'Req' constructor
@@ -42,7 +43,7 @@ nop :: Result a
 nop = Empty
 
 -- | N2O protocol loop
-protoRun :: f a -> [Proto f a] -> N2O f a (Result (f a))
+protoRun :: f a -> [Proto f a custom] -> N2O f a custom (Result (f a))
 protoRun = loop []
   where
     loop _ _ [] = return nop
@@ -67,13 +68,13 @@ getContext = do
   lift $ readIORef ref
 
 -- | Put data to the local state
-put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a ()
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O f a custom ()
 put k v = do
   state <- ask
   lift $ modifyIORef state (\cx@Context{cxState=m} -> cx{cxState=insert k (B.encode v) m})
 
 -- | Get data from the local state
-get :: (B.Binary bin) => BS.ByteString -> N2O f a (Maybe bin)
+get :: (B.Binary bin) => BS.ByteString -> N2O f a custom (Maybe bin)
 get k = do
   state <- N2OT return
   cx <- lift $ readIORef state

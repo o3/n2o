@@ -37,14 +37,15 @@ data Req = Req
 -- for the protocol handler's input type. @(a :: *)@ - base type for the
 -- event handler's input type. I.e. @(f a)@ gives input type for the
 -- protocol handler. @(Event a)@ gives input type for the event handler.
-data Context (f :: * -> *) a = Context
-  { cxHandler :: Event a -> N2O f a (Result a)
+data Context (f :: * -> *) a custom = Context
+  { cxHandler :: Event a -> N2O f a custom (Result a)
   , cxReq :: Req
-  , cxMiddleware :: [Context f a -> Context f a]
-  , cxProtos :: [Proto f a]
+  , cxMiddleware :: [Context f a custom -> Context f a custom]
+  , cxProtos :: [Proto f a custom]
   , cxDePickle :: BL.ByteString -> Maybe a
   , cxPickle :: a -> BL.ByteString
   , cxState :: Map BS.ByteString BL.ByteString
+  , cxCustom :: Maybe custom
   }
 
 -- | Result of the message processing
@@ -56,8 +57,8 @@ data Result a
   deriving (Show, Eq)
 
 -- | N2O protocol handler
-newtype Proto f a = Proto
-  { protoInfo :: f a -> N2O f a (Result (f a))
+newtype Proto f a custom = Proto
+  { protoInfo :: f a -> N2O f a custom (Result (f a))
   }
 
 -- | Event data type
@@ -68,10 +69,10 @@ data Event a
   deriving Show
 
 -- | Local mutable state
-type State f a = IORef (Context f a)
+type State f a custom = IORef (Context f a custom)
 
 -- | 'N2OT' over 'IO' with 'N2OState' as env
-type N2O f a = N2OT (State f a) IO
+type N2O f a custom = N2OT (State f a custom) IO
 
 -- | Reader monad transformer
 newtype N2OT state m a = N2OT

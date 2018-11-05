@@ -14,10 +14,10 @@ import Network.N2O.Types as Types
 import Web.Nitro
 import Network.N2O.Protocols.Types as Proto
 
-nitroProto :: (Show a, B.Binary a) => Proto N2OProto a
+nitroProto :: (Show a, B.Binary a) => Proto N2OProto a (NitroPlugin a)
 nitroProto = Proto { protoInfo = nitroInfo }
 
-nitroInfo :: (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a (Result (N2OProto a))
+nitroInfo :: (Show a, B.Binary a) => N2OProto a -> N2O N2OProto a (NitroPlugin a) (Result (N2OProto a))
 nitroInfo message = do
   ref <- ask
   cx@Context {cxHandler = handle, cxDePickle = dePickle} <- lift $ readIORef ref

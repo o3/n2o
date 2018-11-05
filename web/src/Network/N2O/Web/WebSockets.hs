@@ -22,11 +22,12 @@ import Network.N2O.Core
 import Network.N2O.Protocols.Types as Proto
 import Network.N2O.Types
 import Network.Socket (Socket)
+import Web.Nitro (NitroPlugin)
 import qualified Network.WebSockets as WS
 import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
 
-wsApp :: Context N2OProto a -> WS.ServerApp
+wsApp :: Context N2OProto a (NitroPlugin a) -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx {cxReq = mkReq {reqPath = path}}
@@ -59,7 +60,7 @@ mkPending opts sock req = do
       , WSConn.pendingStream = stream
       }
 
-listen :: WS.Connection -> State N2OProto a -> IO ()
+listen :: WS.Connection -> State N2OProto a (NitroPlugin a) -> IO ()
 listen conn ref =
   do pid <- receiveN2O conn ref
      cx@Context {cxProtos = protos} <- readIORef ref

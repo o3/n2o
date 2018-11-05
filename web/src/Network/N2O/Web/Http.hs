@@ -19,6 +19,7 @@ import Prelude hiding (takeWhile)
 import Data.Attoparsec.ByteString hiding (try)
 import Data.CaseInsensitive
 import qualified Network.WebSockets as WS
+import Web.Nitro
 
 data HttpConf = HttpConf
 
@@ -30,7 +31,7 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
-runServer :: String -> Int -> Context N2OProto a -> IO ()
+runServer :: String -> Int -> Context N2OProto a (NitroPlugin a) -> IO ()
 runServer host port cx =
   withSocketsDo $ do
     addr <- resolve host (show port)
@@ -47,7 +48,7 @@ runServer host port cx =
       listen sock 10
       return sock
 
-acceptConnections :: HttpConf -> Context N2OProto a -> Socket -> IO ()
+acceptConnections :: HttpConf -> Context N2OProto a (NitroPlugin a) -> Socket -> IO ()
 acceptConnections conf cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -55,7 +56,7 @@ acceptConnections conf cx sock = do
             (\e@(SomeException _) -> print e))
   acceptConnections conf cx sock
 
-talk :: HttpConf -> Context N2OProto a -> Socket -> SockAddr -> IO ()
+talk :: HttpConf -> Context N2OProto a (NitroPlugin a) -> Socket -> SockAddr -> IO ()
 talk conf cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
