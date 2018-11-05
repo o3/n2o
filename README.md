@@ -54,7 +54,11 @@ data Example = Greet deriving (Show, Eq, Read)
 ```haskell
 data Example = Greet deriving (Show, Eq, Read)
 main = runServer "localhost" 3000 cx
-cx = createCx router
+cx = mkCx{ cxMiddleware=[router]
+         , cxProtos = [nitroProto]
+         , cxDePickle = defDePickle
+         , cxPickle = defPickle
+         }
 router cx@Context{cxReq=Req{reqPath=path}} =
   let handle = case path of
                   "/ws/samples/static/index.html" -> index
