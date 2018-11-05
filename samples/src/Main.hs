@@ -9,7 +9,6 @@ import Network.N2O.Nitro.Elements
 import Network.N2O.Nitro.Internal
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
-import Prelude hiding (id)
 
 data Example = Greet deriving (Show, Eq, Read, Generic, Binary)
 
@@ -26,7 +25,7 @@ router cx@Context{cxReq=Req{reqPath=path}} =
 
 index Init = do
   updateText "system" "What is your name?"
-  wireEl button{id="send", postback=Just Greet, source=["name"]}
+  wireEl button{id_="send", postback=Just Greet, source=["name"]}
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")

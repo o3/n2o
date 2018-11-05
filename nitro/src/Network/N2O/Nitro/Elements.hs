@@ -15,7 +15,7 @@ import GHC.Generics (Generic)
 import Prelude hiding (id,max,min)
 
 #define ELEMENT_BASE()\
-     id          :: BS.ByteString\
+     id_         :: BS.ByteString\
    , validation  :: BS.ByteString,             validate    :: BS.ByteString\
    , class_      :: [BS.ByteString],           style       :: BS.ByteString\
    , source      :: [BS.ByteString],           onclick     :: BS.ByteString\
@@ -29,7 +29,7 @@ import Prelude hiding (id,max,min)
    , lang        :: BS.ByteString,             contenteditable :: Bool
 
 #define ELEMENT_BASE_DEFAULTS()\
-   id="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
+   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
   ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
   ,tabindex=0,validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
 
@@ -247,9 +247,17 @@ textarea = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",dirname="
 render :: Element a -> BL.ByteString
 render (MkLiter{htmlEncode=htmlEncode,text=text}) =
   TL.encodeUtf8 $ if htmlEncode then htmlEscape text else text
+render el@MkButton{} =
+  let content_ = mconcat $ fmap render (body el) in
+  emitTag "button" content_ ([("id",    id_ el),           ("class",   BS.intercalate " " (class_ el))
+                             ,("style", style el),        ("name",     name el)
+                             ,("onchange", onchange el),  ("type",     type_ el)
+                             ,("onclick",  onclick el),   ("disabled", if disabled el then "disabled" else "")
+                             ,("value",  value el)
+                             ] ++ dataFields el)
 render el =
   let content_ = mconcat $ fmap render (body el) in
-  emitTag (htmlTag el) content_ ([("id",    id el),    ("class",    BS.intercalate " " (class_ el))
+  emitTag (htmlTag el) content_ ([("id",    id_ el),   ("class",    BS.intercalate " " (class_ el))
                                  ,("style", style el), ("title",    T.encodeUtf8 $ title el)
                                  ,("lang",  lang el),  ("tabindex", C8.pack $ show $ tabindex el)
                                  ,("role",  role el),  ("contenteditable", if contenteditable el then "true" else "false")

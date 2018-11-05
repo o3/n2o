@@ -32,7 +32,6 @@ import GHC.Generics (Generic)
 import Network.N2O hiding (Event)
 import Network.N2O.Nitro.Elements (Element(..),render)
 import Network.N2O.Nitro.Internal
-import Prelude hiding (id)
 
 instance (B.Binary a) => B.Binary (Element a)
 
@@ -82,7 +81,7 @@ renderAction (AElement el) = do
   case postback el of
     Nothing -> return ()
     Just pb -> void (wire $ AEvent Event
-        {eventType = "click", eventPostback = pb, eventTarget = id el, eventSource = source el})
+        {eventType = "click", eventPostback = pb, eventTarget = id_ el, eventSource = source el})
   return ""
 
 -- | Render list of elements to the HTML
