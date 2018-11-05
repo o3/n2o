@@ -213,7 +213,6 @@ get k = do
     Just v -> return $ Just (B.decode v)
     _ -> return Nothing
 
-
 getContext :: N2O (Context f a N2O)
 getContext = do
   ref <- N2OT return
