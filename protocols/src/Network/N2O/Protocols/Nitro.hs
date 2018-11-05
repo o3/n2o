@@ -11,7 +11,7 @@ import Data.IORef
 import Data.BERT
 import Network.N2O.Core
 import Network.N2O.Types as Types
-import Network.N2O.Nitro
+import Web.Nitro
 import Network.N2O.Protocols.Types as Proto
 
 nitroProto :: (Show a, B.Binary a) => Proto N2OProto a

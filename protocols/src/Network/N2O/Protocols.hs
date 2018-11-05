@@ -22,7 +22,7 @@ module Network.N2O.Protocols
 import Network.N2O.Types as Types
 import Network.N2O.Protocols.Types as Proto
 import Network.N2O.Core
-import Network.N2O.Nitro
+import Web.Nitro
 import Network.N2O.Protocols.Nitro
 
 -- | Create context with specified @router@ middleware

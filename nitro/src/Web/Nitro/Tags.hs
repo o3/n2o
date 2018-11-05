@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Network.N2O.Nitro.Tags where
+module Web.Nitro.Tags where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL

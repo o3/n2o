@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
-module Network.N2O.Nitro.Internal where
+module Web.Nitro.Internal where
 
 import qualified Data.Binary as B
 import qualified Data.ByteString as BS

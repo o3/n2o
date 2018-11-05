@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric, ScopedTypeVariables #-}
 
 {-|
-Module      : Network.N2O.Nitro
+Module      : Web.Nitro
 Description : Nitro DSL
 Copyright   : (c) Marat Khafizov, 2018
 License     : BSD-3
@@ -12,7 +12,7 @@ Portability : not portable
 Nitro DSL to build interactive user interfaces
 
 -}
-module Network.N2O.Nitro where
+module Web.Nitro where
 
 import Control.Monad (forM_, void)
 import qualified Data.Binary as B
@@ -30,8 +30,8 @@ import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
 import Network.N2O hiding (Event)
-import Network.N2O.Nitro.Elements (Element(..),render)
-import Network.N2O.Nitro.Internal
+import Web.Nitro.Elements (Element(..),render)
+import Web.Nitro.Internal
 
 instance (B.Binary a) => B.Binary (Element a)
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric, OverloadedStrings, CPP #-}
-module Network.N2O.Nitro.Elements where
+module Web.Nitro.Elements where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -9,8 +9,8 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as CL8
-import Network.N2O.Nitro.Internal
-import Network.N2O.Nitro.Tags
+import Web.Nitro.Internal
+import Web.Nitro.Tags
 import GHC.Generics (Generic)
 import Prelude hiding (id,max,min)
 
