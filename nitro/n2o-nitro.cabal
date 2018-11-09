@@ -1,6 +1,5 @@
 name:           n2o-nitro
 version:        0.11.2
-description:    Nitro DSL
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
@@ -13,6 +12,8 @@ cabal-version:  >= 1.10
 extra-source-files:  README.md
 category:       Network, N2O, Web
 synopsis:       Nitro Elements, Events and Actions
+description:    N2O Nitro elements represent HTML and JavaScript
+                rendreing from Haskell tuples.
 
 source-repository head
   type: git

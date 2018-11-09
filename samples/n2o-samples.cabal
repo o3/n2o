@@ -1,6 +1,5 @@
 name:           n2o-samples
 version:        0.11
-description:    N2O Haskell Sample
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
 author:         Marat Khafizov
@@ -11,6 +10,8 @@ license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:  README.md
+description:    As example this package provides simple Nitro N2O
+                application with index and about pages.
 
 source-repository head
   type: git

@@ -1,6 +1,5 @@
 name:           n2o
 version:        0.11.1
-description:    Embeddable Application Protocol Loop
 homepage:       https://github.com/xafizoff/n2o#readme
 bug-reports:    https://github.com/xafizoff/n2o/issues
 author:         Marat Khafizov
@@ -13,6 +12,10 @@ cabal-version:  >= 1.10
 extra-source-files:  README.md
 category:       Network, N2O, Web
 synopsis:       Abstract Protocol Loop
+description:    N2O defines a way we scale protocols, database schema, applications
+                and services across companies, formatters, views and presentation layers.
+                At the core N2O folds a list of protocols and their handlers providing
+                a minimal type-level specification for general purpose application protocol tract.
 
 source-repository head
   type: git

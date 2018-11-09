@@ -1,6 +1,5 @@
 name:           n2o-web
 version:        0.11.2
-description:    Poor man's WebSocket and HTTP static servers.
 homepage:       https://github.com/xafizoff/n2o-hs#readme
 bug-reports:    https://github.com/xafizoff/n2o-hs/issues
 author:         Marat Khafizov
@@ -13,6 +12,7 @@ cabal-version:  >= 1.10
 extra-source-files:  README.md
 synopsis:       N2O adapter for WebSockets
 category:       Network, N2O, Web
+description:    Poor man's WebSocket and HTTP static servers.
 
 source-repository head
   type: git
