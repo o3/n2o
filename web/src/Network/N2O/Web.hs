@@ -7,14 +7,8 @@ Maintainer  : xafizoff@gmail.com
 Stability   : experimental
 Portability : not portable
 
-This package provides a simple static HTTP server and adapter
-for WebSockets to the N2O Protocol Loop.
-
-Disclaimer: an HTTP server is not for production use. Please consider
-to use more robust static server like NGinx or something like
-
-* https://hackage.haskell.org/package/wai-websockets
-* https://hackage.haskell.org/package/websockets-snap
+This package provides a simple static HTTP server and the WebSockets adapter
+to the N2O Protocol Loop.
 
 -}
 module Network.N2O.Web
