@@ -70,7 +70,9 @@ talk cx sock addr = do
           wsApp cx {cxReq = req} pending
         else fileResp (preparePath $ C.unpack $ reqPath req) (sendResp sock)
   where
-    preparePath ('/':path) = path
+    preparePath ('.':path) = preparePath path
+    preparePath ('.':'.':path) = preparePath path
+    preparePath ('/':path) = preparePath path
     preparePath path = path
 
 status = \case
