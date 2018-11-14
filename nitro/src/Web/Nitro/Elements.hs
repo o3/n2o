@@ -55,9 +55,6 @@ data Element a =
  , width::BS.ByteString, image::BS.ByteString }
  | MkMap
  { ELEMENT_BASE(), name::BS.ByteString }
- | MkObject
- { ELEMENT_BASE(), data_::BS.ByteString, form::BS.ByteString, height::BS.ByteString, name::BS.ByteString
- , type_::BS.ByteString, usemap::Bool, width::BS.ByteString }
  | MkParam
  { ELEMENT_BASE(), name::BS.ByteString, value::BS.ByteString }
  | MkSource
@@ -78,14 +75,8 @@ data Element a =
  | MkForm
  { ELEMENT_BASE(), accept_charset::BS.ByteString, action::BS.ByteString, autocomplete::Bool, enctype::BS.ByteString
  , method::BS.ByteString, name::BS.ByteString, novalidate::Bool, target::BS.ByteString }
- | MkKeygen
- { ELEMENT_BASE(), autofocus::Bool, challenge::BS.ByteString, disabled::Bool, form::BS.ByteString
- , keytype::BS.ByteString, name::BS.ByteString }
  | MkLabel
  { ELEMENT_BASE(), for::BS.ByteString, form::BS.ByteString }
- | MkMeter
- { ELEMENT_BASE(), high::BS.ByteString, low::BS.ByteString, max_::BS.ByteString, min_::BS.ByteString
- , optimum::BS.ByteString, value::BS.ByteString }
  | MkOptgroup
  { ELEMENT_BASE(), disabled::Bool, label::BS.ByteString }
  | MkOption

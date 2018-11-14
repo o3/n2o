@@ -69,9 +69,6 @@ image_ = MkImage{ELEMENT_BASE_DEFAULTS1(),alt="",height="",ismap="",src="",usema
 map_ :: Element a
 map_ = MkMap{ELEMENT_BASE_DEFAULTS1(),name=""}
 
-object_ :: Element a
-object_ = MkObject{ELEMENT_BASE_DEFAULTS1(),data_="",form="",height="",name="",type_="",usemap=False,width=""}
-
 param :: Element a
 param = MkParam{ELEMENT_BASE_DEFAULTS1(),value="",name=""}
 
@@ -92,17 +89,11 @@ form_ :: Element a
 form_ = MkForm{ELEMENT_BASE_DEFAULTS1(),accept_charset="",action="",autocomplete=False,enctype="",method="",name=""
              ,novalidate=False,target=""}
 
-keygen :: Element a
-keygen = MkKeygen{ELEMENT_BASE_DEFAULTS1(),autofocus=True,challenge="",disabled=False,form="",keytype="",name=""}
-
 legend_ :: Element a
 legend_ = base{htmlTag="legend"}
 
 label_ :: Element a
 label_ = MkLabel{ELEMENT_BASE_DEFAULTS1(),for="",form=""}
-
-meter :: Element a
-meter = MkMeter{ELEMENT_BASE_DEFAULTS1(),high="",low="",max_="",min_="",optimum="",value=""}
 
 optgroup :: Element a
 optgroup = MkOptgroup{ELEMENT_BASE_DEFAULTS1(),disabled=False,label=""}
