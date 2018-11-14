@@ -48,39 +48,14 @@ del = MkEdit{ELEMENT_BASE_DEFAULTS(),cite="",datetime="",htmlTag="del"}
 ins :: Element a
 ins = del{htmlTag="ins"}
 
-area :: Element a
-area = MkArea{ELEMENT_BASE_DEFAULTS1(),alt="",coords="",href="",hreflang="",media="",target="",rel="",shape="",type_=""}
-
-audio :: Element a
-audio = MkAudio{ELEMENT_BASE_DEFAULTS1(),autoplay=True,controls="",loop="",mediagroup="",muted="",preload="",src="",width=""}
-
 canvas :: Element a
 canvas = MkCanvas{ELEMENT_BASE_DEFAULTS1(),height="",width=""}
-
-embed :: Element a
-embed = MkEmbed{ELEMENT_BASE_DEFAULTS1(),height="",width="",src="",type_=""}
 
 iframe :: Element a
 iframe = MkIframe{ELEMENT_BASE_DEFAULTS1(),height="",width="",src="",srcdoc="",name="",sandbox="",seamless=""}
 
 image_ :: Element a
 image_ = MkImage{ELEMENT_BASE_DEFAULTS1(),alt="",height="",ismap="",src="",usemap=False,width="",image=""}
-
-map_ :: Element a
-map_ = MkMap{ELEMENT_BASE_DEFAULTS1(),name=""}
-
-param :: Element a
-param = MkParam{ELEMENT_BASE_DEFAULTS1(),value="",name=""}
-
-source_ :: Element a
-source_ = MkSource{ELEMENT_BASE_DEFAULTS1(),media="",src="",type_=""}
-
-track :: Element a
-track = MkTrack{ELEMENT_BASE_DEFAULTS1(),default_="",kind="",src="",srclang="",label=""}
-
-video :: Element a
-video = MkVideo{ELEMENT_BASE_DEFAULTS1(),autoplay=False,controls="",height="",loop="",mediagroup="",muted=""
-               ,poster="",preload="",src="",width=""}
 
 fieldset :: Element a
 fieldset = MkFielset{ELEMENT_BASE_DEFAULTS1(),disabled=False,form="",name="",legend=""}

@@ -37,35 +37,14 @@ data Element a =
  { ELEMENT_BASE(), media::BS.ByteString, scoped::BS.ByteString, type_::BS.ByteString }
  | MkEdit
  { ELEMENT_BASE(), cite::BS.ByteString, datetime::BS.ByteString }
- | MkArea
- { ELEMENT_BASE(), alt::T.Text, coords::BS.ByteString, href::BS.ByteString, hreflang::BS.ByteString
- , media::BS.ByteString, target::BS.ByteString, rel::BS.ByteString, shape::BS.ByteString, type_::BS.ByteString}
- | MkAudio
- { ELEMENT_BASE(), autoplay::Bool, controls::BS.ByteString, loop::BS.ByteString, mediagroup::BS.ByteString
- , muted::BS.ByteString, preload::BS.ByteString, src::BS.ByteString, width::BS.ByteString }
  | MkCanvas
  { ELEMENT_BASE(), height::BS.ByteString, width::BS.ByteString }
- | MkEmbed
- { ELEMENT_BASE(), height::BS.ByteString, width::BS.ByteString, src::BS.ByteString, type_::BS.ByteString }
  | MkIframe
  { ELEMENT_BASE(), height::BS.ByteString, width::BS.ByteString, name::BS.ByteString, sandbox::BS.ByteString
  , seamless::BS.ByteString, src::BS.ByteString, srcdoc::BS.ByteString }
  | MkImage
  { ELEMENT_BASE(), alt::T.Text, height::BS.ByteString, ismap::BS.ByteString, src::BS.ByteString, usemap::Bool
  , width::BS.ByteString, image::BS.ByteString }
- | MkMap
- { ELEMENT_BASE(), name::BS.ByteString }
- | MkParam
- { ELEMENT_BASE(), name::BS.ByteString, value::BS.ByteString }
- | MkSource
- { ELEMENT_BASE(), media::BS.ByteString, src::BS.ByteString, type_::BS.ByteString }
- | MkTrack
- { ELEMENT_BASE(), default_::BS.ByteString, kind::BS.ByteString, label::BS.ByteString, src::BS.ByteString
- , srclang::BS.ByteString }
- | MkVideo
- { ELEMENT_BASE(), autoplay::Bool, controls::BS.ByteString, height::BS.ByteString, loop::BS.ByteString
- , width::BS.ByteString, mediagroup::BS.ByteString, muted::BS.ByteString, poster::BS.ByteString
- , preload::BS.ByteString, src::BS.ByteString}
  | MkButton
  { ELEMENT_BASE(), autofocus::Bool, disabled::Bool, form::BS.ByteString, formaction::BS.ByteString
  , formenctype::BS.ByteString, formmethod::BS.ByteString, formtarget::BS.ByteString, formnovalidate::Bool
