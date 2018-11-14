@@ -12,15 +12,6 @@ import qualified Data.Text.Encoding as T
 
 #include "nitro.h"
 
-defaultRender :: Element a -> BL.ByteString
-defaultRender el =
-  let content_ = mconcat $ fmap (renderer el) (body el) in
-  emitTag (htmlTag el) content_ ([("id",    id_ el),   ("class",    BS.intercalate " " (class_ el))
-                                 ,("style", style el), ("title",    T.encodeUtf8 $ title el)
-                                 ,("lang",  lang el),  ("tabindex", C8.pack $ show $ tabindex el)
-                                 ,("role",  role el),  ("contenteditable", if contenteditable el then "true" else "false")
-                                 ] ++ dataFields el)
-
 base :: Element a
 base = MkBase{ELEMENT_BASE_DEFAULTS1()}
 
@@ -130,27 +121,52 @@ select = MkSelect{ELEMENT_BASE_DEFAULTS1(),autofocus=False,disabled=False,form="
                  ,required=False,size=""}
 
 textarea :: Element a
-textarea = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",dirname="",disabled=False,form=""
+textarea = let el = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",dirname="",disabled=False,form=""
                      ,maxlength="",name="",placeholder="",readonly=False,required=False,rows="",wrap="",value=""}
+           in el{contenteditable=True}
 
 button:: Element a
 button = MkButton{ELEMENT_BASE_DEFAULTS1(),autofocus=True,disabled=False,form="",formaction="",formmethod=""
-                 ,formtarget="",formnovalidate=False,formenctype="",name="",type_="button",value="",renderer=render}
-  where
-    render el@MkButton{} =
-      let content_ = mconcat $ fmap (renderer el) (body el) in
-      emitTag "button" content_ ([("id",      id_ el),       ("class",    BS.intercalate " " (class_ el))
-                                ,("style",    style el),     ("name",     name el)
-                                ,("onchange", onchange el),  ("type",     type_ el)
-                                ,("onclick",  onclick el),   ("disabled", if disabled el then "disabled" else "")
-                                ,("value",    value el)
-                                ] ++ dataFields el)
+                 ,formtarget="",formnovalidate=False,formenctype="",name="",type_="button",value=""}
 
 literal :: Element a
-literal = MkLiter {htmlEncode = True, text = "", renderer = render}
-  where
-    render MkLiter {htmlEncode = htmlEncode, text = text} =
-      TL.encodeUtf8 $
-      if htmlEncode
-        then htmlEscape text
-        else text
+literal = MkLiter {ELEMENT_BASE_DEFAULTS1(), htmlEncode = True, text = ""}
+
+-- | Render element
+render :: Element a -> BL.ByteString
+render el@MkTextarea{} =
+  let content_ = mconcat $ fmap (renderer el) (body el) in
+  emitTag "textarea" content_ ([ ("id",    id_ el),      ("class", BS.intercalate " " (class_ el))
+                               , ("style", style el),    ("title", T.encodeUtf8 $ title el)
+                               , ("lang",  lang el),     ("tabindex", tabindex el)
+                               , ("contenteditable", if contenteditable el then "true" else "false")
+                               -- spec
+                               , ("autofocus", if autofocus el then "autofocus" else "")
+                               , ("cols", cols el), ("dirname", dirname el)
+                               , ("disabled", if disabled el then "disabled" else "")
+                               , ("form", form el), ("maxlength", maxlength el)
+                               , ("name", name el), ("placeholder", placeholder el)
+                               , ("readonly", if readonly el then "readonly" else "")
+                               , ("required", if readonly el then "required" else "")
+                               , ("rows", rows el), ("wrap", wrap el)
+                               ] ++ dataFields el)
+render MkLiter {htmlEncode = htmlEncode, text = text} =
+  TL.encodeUtf8 $
+  if htmlEncode
+    then htmlEscape text
+    else text
+render el@MkButton{} =
+  let content_ = mconcat $ fmap (renderer el) (body el) in
+  emitTag "button" content_ ([("id",      id_ el),       ("class",    BS.intercalate " " (class_ el))
+                            ,("style",    style el),     ("name",     name el)
+                            ,("onchange", onchange el),  ("type",     type_ el)
+                            ,("onclick",  onclick el),   ("disabled", if disabled el then "disabled" else "")
+                            ,("value",    value el)
+                            ] ++ dataFields el)
+render el =
+  let content_ = mconcat $ fmap (renderer el) (body el) in
+  emitTag (htmlTag el) content_ ([("id",    id_ el),   ("class",    BS.intercalate " " (class_ el))
+                                 ,("style", style el), ("title",    T.encodeUtf8 $ title el)
+                                 ,("lang",  lang el),  ("tabindex", C8.pack $ show $ tabindex el)
+                                 ,("role",  role el),  ("contenteditable", if contenteditable el then "true" else "false")
+                                 ] ++ dataFields el)

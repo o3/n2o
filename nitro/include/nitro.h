@@ -12,14 +12,14 @@
    , onkeyup     :: BS.ByteString,             onkeydown   :: BS.ByteString\
    , onfocus     :: BS.ByteString,             dataFields  :: [(BS.ByteString, BS.ByteString)]\
    , body        :: [Element a],               role        :: BS.ByteString\
-   , tabindex    :: Integer,                   htmlTag     :: BS.ByteString\
+   , tabindex    :: BS.ByteString,             htmlTag     :: BS.ByteString\
    , title       :: T.Text,                    postback    :: Maybe a\
    , lang        :: BS.ByteString,             contenteditable :: Bool
 
 #define ELEMENT_BASE_DEFAULTS()\
-   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
+   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[],renderer=render\
   ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
-  ,tabindex=0,validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
+  ,tabindex="",validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
 
 #define ELEMENT_BASE_DEFAULTS1() ELEMENT_BASE_DEFAULTS(),htmlTag=""
 
