@@ -52,9 +52,9 @@ runServer host port cx = do
 acceptConnections :: Context N2OProto a N2O -> Socket -> IO ()
 acceptConnections cx sock = do
   (handle, host_addr) <- accept sock
-  a <- async (catch
-               (talk cx handle host_addr `finally` close handle)
-               (\e@(SomeException _) -> print e))
+  forkIO (catch
+           (talk cx handle host_addr `finally` close handle)
+           (\e@(SomeException _) -> print e))
   acceptConnections cx sock
 
 talk :: Context N2OProto a N2O -> Socket -> SockAddr -> IO ()
