@@ -71,7 +71,6 @@ talk cx sock addr = do
         else fileResp (preparePath $ C.unpack $ reqPath req) (sendResp sock)
   where
     preparePath ('.':path) = preparePath path
-    preparePath ('.':'.':path) = preparePath path
     preparePath ('/':path) = preparePath path
     preparePath path = path
 
