@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
 module Web.Nitro.Internal where
 
@@ -12,14 +12,13 @@ import qualified Data.ByteString.Lazy.Char8 as CL8
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Encoding as T
-import Data.Char (isAlphaNum, ord, toLower)
 import Data.IORef
 import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Map.Strict as M
 import Data.Map.Strict((!?))
-import Numeric (showHex)
 import Network.N2O hiding (Event)
 import Web.Nitro.Elements (Element(..))
+import Web.Nitro.Elements.Render (render)
 import qualified Data.Vault.Lazy as V
 import System.IO.Unsafe
 
@@ -36,47 +35,6 @@ contextKey = unsafePerformIO V.newKey
 dictKey :: V.Key (M.Map BS.ByteString BL.ByteString)
 dictKey = unsafePerformIO V.newKey
 {-# NOINLINE dictKey #-}
-
-infixr 5 :<
-pattern b :< bs  <- (TL.uncons -> Just (b, bs))
-pattern TEmpty   <- (TL.uncons -> Nothing)
-
--- | Escape untrusted text to prevent XSS
-jsEscape :: CL8.ByteString -> TL.Text
-jsEscape = jsEscapeT . TL.decodeUtf8
-
--- | Escape untrusted text to prevent XSS
-jsEscapeT :: TL.Text -> TL.Text
-jsEscapeT t = escape t TL.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $
-      if isAlphaNum x then
-        TL.snoc acc x
-      else
-        acc <> "\\x" <> TL.pack (flip showHex "" . ord $ x)
-
-htmlEscape :: TL.Text -> TL.Text
-htmlEscape t = escape t TL.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
-    escapeChar '&' = "&amp;"
-    escapeChar '<' = "&lt;"
-    escapeChar '>' = "&gt;"
-    escapeChar '"' = "&quot;"
-    escapeChar '\'' = "&#x27;"
-    escapeChar '/' = "&#x2F;"
-    escapeChar x = TL.singleton x
-
-htmlEscapeAggressive :: TL.Text -> TL.Text
-htmlEscapeAggressive t = escape t TL.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
-    escapeChar x
-      | isAlphaNum x || ord x > 255 = TL.singleton x
-      | otherwise = "&#x" <> TL.pack (flip showHex "" . ord $ x) <> ";"
 
 -- | Action that can be rendered as JavaScript events
 data Action a
@@ -133,7 +91,7 @@ renderElements (e:es) = do
 
 -- | Render element to the HTML
 renderElement :: Element a -> N2O BL.ByteString
-renderElement el = return $ renderer el el
+renderElement = (fmap render) . return
 
 -- | Render event
 renderEvent :: Event a -> N2O BL.ByteString

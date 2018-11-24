@@ -15,10 +15,12 @@ module Web.Nitro
  , module Web.Nitro.Internal
  , module Web.Nitro.Tags
  , module Web.Nitro.Elements.Impl
+ , module Web.Nitro.Elements.Render
  ) where
 
 import Web.Nitro.Elements
 import Web.Nitro.Internal
 import Web.Nitro.Tags
 import Web.Nitro.Elements.Impl
+import Web.Nitro.Elements.Render
 

@@ -24,6 +24,7 @@ library
                   Web.Nitro
                 , Web.Nitro.Elements
                 , Web.Nitro.Elements.Impl
+                , Web.Nitro.Elements.Render
                 , Web.Nitro.Tags
                 , Web.Nitro.Internal
   include-dirs: include

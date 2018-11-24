@@ -12,10 +12,6 @@ import qualified Data.ByteString.Lazy.Char8 as CL8
 
 #include "nitro.h"
 
-type Renderer a = Element a -> BL.ByteString
-instance Show (Renderer a) where
-  show _ = "Renderer"
-
 data Element a =
    MkBase
  { ELEMENT_BASE() }

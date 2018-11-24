@@ -3,7 +3,7 @@
 #define NITRO_H
 
 #define ELEMENT_BASE()\
-     id_         :: BS.ByteString,             renderer    :: Renderer a\
+     id_         :: BS.ByteString\
    , validation  :: BS.ByteString,             validate    :: BS.ByteString\
    , class_      :: [BS.ByteString],           style       :: BS.ByteString\
    , source      :: [BS.ByteString],           onclick     :: BS.ByteString\
@@ -17,7 +17,7 @@
    , lang        :: BS.ByteString,             contenteditable :: Bool
 
 #define ELEMENT_BASE_DEFAULTS()\
-   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[],renderer=render\
+   id_="",class_=[],style="",postback=Nothing,body=[],dataFields=[]\
   ,onfocus="",onblur="",onchange="",onclick="",onkeydown="",onkeyup="",onkeypress="",onmouseover=""\
   ,tabindex="",validation="",validate="",source=[],role="",title="",lang="",contenteditable=False
 
