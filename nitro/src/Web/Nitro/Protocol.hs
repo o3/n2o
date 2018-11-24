@@ -1,34 +1,30 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Network.N2O.Protocols.Nitro where
+module Web.Nitro.Protocol where
 
 import Control.Monad (forM_)
+import Control.Monad.IO.Class
 import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString as BS
 import qualified Data.Binary as B
 import qualified Data.ByteString.Lazy.Char8 as CL8
 import Data.IORef
-import Data.BERT
-import Network.N2O.Core
-import Network.N2O.Types as Types
-import Web.Nitro
-import Network.N2O.Protocols.Types as Proto
+import Network.N2O.Internal
+import Web.Nitro.Internal
+import qualified Data.Vault.Lazy as V
 
-nitroProto :: (Show a) => Proto N2OProto a N2O
-nitroProto = Proto { protoInfo = nitroInfo }
-
-nitroInfo :: (Show a) => N2OProto a -> N2O (Result (N2OProto a))
-nitroInfo message = do
+nitroProto :: (Show a) => Proto (N2OProto a) (IORef V.Vault)
+nitroProto message = do
   ref <- ask
   cx@Context {cxHandler = handle, cxDePickle = dePickle} <- getContext
-  lift $ putStrLn ("NITRO : " ++ show message)
+  liftIO $ putStrLn ("NITRO : " ++ show message)
   case message of
-    msg@(N2ONitro (Proto.Init pid)) -> do
-      handle Types.Init
+    msg@(N2ONitro (NitroInit pid)) -> do
+      handle Init
       actions <- getActions
       rendered <- renderActions' actions
       return $ Reply (reply rendered)
-    msg@(N2ONitro (Pickle _source pickled linked)) -> do
+    msg@(N2ONitro (NitroPickle _source pickled linked)) -> do
       forM_ (M.toList linked) (uncurry put)
       case dePickle pickled of
         Just x -> do
@@ -37,7 +33,7 @@ nitroInfo message = do
           rendered <- renderActions' actions
           return $ Reply (reply rendered)
         _ -> return Unknown
-    msg@(N2ONitro Done) -> do
+    msg@(N2ONitro NitroDone) -> do
       handle Terminate
       return Empty
   where

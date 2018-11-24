@@ -18,9 +18,7 @@ import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as M
 import qualified Data.Text.Lazy as T
 import Data.Text.Lazy.Encoding
-import Network.N2O.Core
-import Network.N2O.Protocols.Types as Proto
-import Network.N2O.Types
+import Network.N2O.Internal
 import Network.Socket (Socket)
 import Web.Nitro
 import qualified Network.WebSockets as WS
@@ -28,7 +26,7 @@ import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
 import qualified Data.Vault.Lazy as V
 
-wsApp :: Context N2OProto a N2O -> WS.ServerApp
+wsApp :: Context N2OProto a (IORef V.Vault) -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx {cxReq = mkReq {reqPath = path}}
@@ -78,7 +76,7 @@ listen conn ref =
              Right (_, _, term) ->
                case fromBert term of
                  Just msg -> do
-                   reply <- runN2O (protoRun msg protos) ref
+                   reply <- runReaderT (protoRun msg protos) ref
                    process conn reply
                  _ -> return ()
              _ -> return ()
@@ -86,7 +84,7 @@ listen conn ref =
      `finally` do
     vault <- readIORef ref
     let cx@Context {cxProtos = protos} = fromJust $ V.lookup contextKey vault
-    runN2O (protoRun (N2ONitro Done) protos) ref
+    runReaderT (protoRun (N2ONitro NitroDone) protos) ref
     return ()
 
 process conn reply =
@@ -104,7 +102,7 @@ receiveN2O conn ref = do
     WS.Text bs _ ->
       case LC8.stripPrefix "N2O," bs of
         Just pid -> do
-          reply <- runN2O (protoRun (N2ONitro $ Proto.Init pid) protos) ref
+          reply <- runReaderT (protoRun (N2ONitro $ NitroInit pid) protos) ref
           process conn reply
           return pid
         _ -> error "Protocol violation"
@@ -112,9 +110,9 @@ receiveN2O conn ref = do
 -- | Convert Binary Erlang Terms (BERT) to the 'N2OProto' specification
 fromBert :: Term -> Maybe (N2OProto a)
 fromBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) =
-  Just $ N2ONitro (Proto.Init pid)
+  Just $ N2ONitro (NitroInit pid)
 fromBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
-  Just $ N2ONitro (Pickle source pickled (convert linked))
+  Just $ N2ONitro (NitroPickle source pickled (convert linked))
   where
     convert [] = M.empty
     convert (TupleTerm [AtomTerm k, BytelistTerm v]:vs) =

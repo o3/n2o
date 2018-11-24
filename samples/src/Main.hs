@@ -3,7 +3,6 @@ module Main (main) where
 
 import Network.N2O
 import Network.N2O.Web
-import Network.N2O.Protocols (nitroProto)
 import Web.Nitro
 
 data Example = Greet deriving (Show, Eq, Read)
@@ -29,9 +28,9 @@ index Init = do
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")
-index _ = lift $ putStrLn "Unknown event" >> return Empty
+index _ = liftIO $ putStrLn "Unknown event" >> return Empty
 about Init =
   updateText "app" "This is the N2O Hello World App"
 about ev = do
-  lift $ putStrLn ("Unknown event " <> show ev)
+  liftIO $ putStrLn ("Unknown event " <> show ev)
   return Empty

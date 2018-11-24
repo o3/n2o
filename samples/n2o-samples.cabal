@@ -28,7 +28,6 @@ executable n2o-sample
                 base >=4.7 && < 5
               , n2o >= 0.11
               , n2o-web >= 0.11
-              , n2o-protocols >= 0.11
               , n2o-nitro >= 0.11
               , binary
               , bytestring

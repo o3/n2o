@@ -8,9 +8,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
-import Network.N2O.Types
-import Network.N2O.Protocols.Types
-import Network.N2O.Core
+import Network.N2O.Internal
 import Network.N2O.Web.WebSockets
 import Prelude hiding (takeWhile)
 import Data.Attoparsec.ByteString hiding (try)
@@ -20,6 +18,8 @@ import Web.Nitro
 import Control.Concurrent.Async
 import System.IO
 import Text.Printf
+import Data.IORef
+import qualified Data.Vault.Lazy as V
 
 data Resp = Resp
   { respCode :: Int
@@ -29,7 +29,7 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
-runServer :: String -> Int -> Context N2OProto a N2O -> IO ()
+runServer :: String -> Int -> Context N2OProto a (IORef V.Vault) -> IO ()
 runServer host port cx = do
   hSetBuffering stdout NoBuffering
   printf "Started server at %s:%d\n" host port
@@ -49,7 +49,7 @@ runServer host port cx = do
       listen sock 10
       return sock
 
-acceptConnections :: Context N2OProto a N2O -> Socket -> IO ()
+acceptConnections :: Context N2OProto a (IORef V.Vault) -> Socket -> IO ()
 acceptConnections cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -57,7 +57,7 @@ acceptConnections cx sock = do
            (\e@(SomeException _) -> print e))
   acceptConnections cx sock
 
-talk :: Context N2OProto a N2O -> Socket -> SockAddr -> IO ()
+talk :: Context N2OProto a (IORef V.Vault) -> Socket -> SockAddr -> IO ()
 talk cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs
