@@ -14,14 +14,11 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Encoding as T
 import Data.IORef
-import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Map.Strict as M
 import Data.Map.Strict((!?))
 import Network.N2O hiding (Event)
 import Web.Nitro.Elements (Element(..))
 import Web.Nitro.Elements.Render (render)
-import qualified Data.Vault.Lazy as V
-import System.IO.Unsafe
 
 -- | Top level sum of protocols
 data N2OProto a
@@ -35,24 +32,17 @@ data N2OProto a
 data Nitro a
   = NitroInit BL.ByteString
   | NitroPickle { pickleSource :: BL.ByteString
-           , picklePickled :: BL.ByteString
-           , pickleLinked :: M.Map BS.ByteString BL.ByteString }
+                , picklePickled :: BL.ByteString
+                , pickleLinked :: M.Map BS.ByteString BL.ByteString }
   | NitroDone
   deriving (Show)
 
-type NITRO = N2O (IORef V.Vault)
+type StateRef a = IORef (State a)
 
-actionsKey :: V.Key [Action a]
-actionsKey = unsafePerformIO V.newKey
-{-# NOINLINE actionsKey #-}
-
-contextKey :: V.Key (Context N2OProto a (IORef V.Vault))
-contextKey = unsafePerformIO V.newKey
-{-# NOINLINE contextKey #-}
-
-dictKey :: V.Key (M.Map BS.ByteString BL.ByteString)
-dictKey = unsafePerformIO V.newKey
-{-# NOINLINE dictKey #-}
+data State a = MkState
+  { stActions :: [Action a]
+  , stContext :: Context N2OProto a (StateRef a)
+  , stDict    :: M.Map BS.ByteString BL.ByteString }
 
 -- | Action that can be rendered as JavaScript events
 data Action a
@@ -70,18 +60,18 @@ data Event a = Event
   } deriving (Show)
 
 -- | Wire an element
-wireEl :: Element a -> NITRO (Result a)
+wireEl :: Element a -> N2O (StateRef a) (Result a)
 wireEl = wire . AElement
 
 -- | Wire action
-wire :: Action a -> NITRO (Result a)
+wire :: Action a -> N2O (StateRef a) (Result a)
 wire a = do
   actions <- getActions
   putActions (a : actions)
   return Empty
 
 -- | Render list of actions to JavaScript
-renderActions :: [Action a] -> NITRO BL.ByteString
+renderActions :: [Action a] -> N2O (StateRef a) BL.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
@@ -89,7 +79,7 @@ renderActions (a:as) = do
   return (r <> ";" <> rs)
 
 -- | Render an action
-renderAction :: Action a -> NITRO BL.ByteString
+renderAction :: Action a -> N2O (StateRef a) BL.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el) = do
@@ -100,7 +90,7 @@ renderAction (AElement el) = do
   return ""
 
 -- | Render list of elements to the HTML
-renderElements :: [Element a] -> NITRO BL.ByteString
+renderElements :: [Element a] -> N2O (StateRef a) BL.ByteString
 renderElements [] = return ""
 renderElements (e:es) = do
   r <- renderElement e
@@ -108,15 +98,14 @@ renderElements (e:es) = do
   return (r <> rs)
 
 -- | Render element to the HTML
-renderElement :: Element a -> NITRO BL.ByteString
+renderElement :: Element a -> N2O (StateRef a) BL.ByteString
 renderElement = (fmap render) . return
 
 -- | Render event
-renderEvent :: Event a -> NITRO BL.ByteString
+renderEvent :: Event a -> N2O (StateRef a) BL.ByteString
 renderEvent Event {..} = do
   ref <- ask
-  vault <- liftIO $ readIORef ref
-  let Context{cxPickle=pickle} = fromJust $ V.lookup contextKey vault
+  Context{cxPickle=pickle} <- getContext
   case eventSource of
     [] -> return BL.empty
     src ->
@@ -134,12 +123,12 @@ renderEvent Event {..} = do
     strJoin = BL.fromStrict . BS.intercalate ","
 
 -- | Update text content of the element with the specified @id@
-updateText :: BS.ByteString -> TL.Text -> NITRO (Result a)
+updateText :: BS.ByteString -> TL.Text -> N2O (StateRef a) (Result a)
 updateText target s = wire
   (ARaw ("qi('" <> BL.fromStrict target <> "').innerText='"
          <> TL.encodeUtf8 s <> "'"))
 
-insertBottom :: BS.ByteString -> Element a -> NITRO (Result a)
+insertBottom :: BS.ByteString -> Element a -> N2O (StateRef a) (Result a)
 insertBottom target elem = do
   content <- renderElement elem
   let action =
@@ -161,36 +150,36 @@ defDePickle bs =
     _ -> Nothing
 
 -- | Get action list from the local mutable state
-getActions :: NITRO [Action a]
+getActions :: N2O (StateRef a) [Action a]
 getActions = do
   ref <- ask
-  vault <- liftIO $ readIORef ref
-  return $ fromMaybe [] (V.lookup actionsKey vault)
+  st <- liftIO $ readIORef ref
+  return $ stActions st
 
 -- | Put actions to the local mutable state
-putActions :: [Action a] -> NITRO ()
+putActions :: [Action a] -> N2O (StateRef a) ()
 putActions actions = do
   ref <- ask
-  liftIO $ modifyIORef ref (V.insert actionsKey actions)
+  liftIO $ modifyIORef ref (\st@MkState{} -> st{stActions=actions})
 
 -- | Put data to the local state
-put :: (B.Binary bin) => BS.ByteString -> bin -> NITRO ()
+put :: (B.Binary bin) => BS.ByteString -> bin -> N2O (StateRef a) ()
 put k v = do
   ref <- ask
-  liftIO $ modifyIORef ref (V.adjust (M.insert k (B.encode v)) dictKey)
+  liftIO $ modifyIORef ref (\st@MkState{stDict=dict} -> st{stDict=(M.insert k (B.encode v) dict)})
 
 -- | Get data from the local state
-get :: (B.Binary bin) => BS.ByteString -> NITRO (Maybe bin)
+get :: (B.Binary bin) => BS.ByteString -> N2O (StateRef a) (Maybe bin)
 get k = do
   ref <- ReaderT return
-  vault <- liftIO $ readIORef ref
-  let m = fromJust $ V.lookup dictKey vault
+  st <- liftIO $ readIORef ref
+  let m = stDict st
   case m !? k of
     Just v -> return $ Just (B.decode v)
     _ -> return Nothing
 
-getContext :: NITRO (Context N2OProto a (IORef V.Vault))
+getContext :: N2O (StateRef a) (Context N2OProto a (IORef (State a)))
 getContext = do
   ref <- ReaderT return
-  vault <- liftIO $ readIORef ref
-  return $ fromJust $ V.lookup contextKey vault
+  st <- liftIO $ readIORef ref
+  return $ stContext st

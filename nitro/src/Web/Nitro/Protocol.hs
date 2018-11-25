@@ -11,9 +11,8 @@ import qualified Data.ByteString.Lazy.Char8 as CL8
 import Data.IORef
 import Network.N2O.Internal
 import Web.Nitro.Internal
-import qualified Data.Vault.Lazy as V
 
-nitroProto :: (Show a) => Proto (N2OProto a) (IORef V.Vault)
+nitroProto :: (Show a) => Proto (N2OProto a) (StateRef a)
 nitroProto message = do
   ref <- ask
   cx@Context {cxHandler = handle, cxDePickle = dePickle} <- getContext

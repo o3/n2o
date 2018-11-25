@@ -24,9 +24,8 @@ import Web.Nitro
 import qualified Network.WebSockets as WS
 import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
-import qualified Data.Vault.Lazy as V
 
-wsApp :: Context N2OProto a (IORef V.Vault) -> WS.ServerApp
+wsApp :: Context N2OProto a (StateRef a) -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx {cxReq = mkReq {reqPath = path}}
@@ -36,11 +35,8 @@ wsApp cx pending = do
           [] -> ctx
           (h:hs') -> applyHandlers hs' (h ctx)
       cx2 = applyHandlers handlers cx1
-      vault = V.insert contextKey cx2 V.empty
-      vault' = V.insert dictKey M.empty vault
-      vault'' = V.insert actionsKey [] vault'
   conn <- WS.acceptRequest pending
-  ref <- newIORef vault''
+  ref <- newIORef $ MkState [] cx2 M.empty
   WS.forkPingThread conn 30
   listen conn ref
 
@@ -62,11 +58,11 @@ mkPending opts sock req = do
       , WSConn.pendingStream = stream
       }
 
-listen :: WS.Connection -> IORef V.Vault -> IO ()
+listen :: WS.Connection -> IORef (State a) -> IO ()
 listen conn ref =
   do pid <- receiveN2O conn ref
-     vault <- readIORef ref
-     let cx@Context {cxProtos = protos} = fromJust $ V.lookup contextKey vault
+     st <- readIORef ref
+     let cx@Context {cxProtos = protos} = stContext st
      forever $ do
        message <- WS.receiveDataMessage conn
        case message of
@@ -82,8 +78,8 @@ listen conn ref =
              _ -> return ()
          _ -> error "Unknown message"
      `finally` do
-    vault <- readIORef ref
-    let cx@Context {cxProtos = protos} = fromJust $ V.lookup contextKey vault
+    st <- readIORef ref
+    let cx@Context {cxProtos = protos} = stContext st
     runReaderT (protoRun (N2ONitro NitroDone) protos) ref
     return ()
 
@@ -94,8 +90,8 @@ process conn reply =
 
 receiveN2O conn ref = do
   message <- WS.receiveDataMessage conn
-  vault <- readIORef ref
-  let cx@Context {cxProtos = protos} = fromJust $ V.lookup contextKey vault
+  st <- readIORef ref
+  let cx@Context {cxProtos = protos} = stContext st
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"
