@@ -1,11 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
 module Main (main) where
 
 import Network.N2O
 import Network.N2O.Web
-import Web.Nitro
+import GHC.Generics (Generic)
+import Data.Serialize (Serialize)
 
-data Example = Greet deriving (Show, Eq, Read)
+data Example = Greet deriving (Show, Eq, Generic, Serialize)
 
 main = runServer "localhost" 3000 cx
 
@@ -28,7 +29,7 @@ index Init = do
 index (Message Greet) = do
   Just name <- get "name" -- wf:q/1
   updateText "system" ("Hello, " <> jsEscape name <> "!")
-index _ = liftIO $ putStrLn "Unknown event" >> return Empty
+index ev = liftIO $ putStrLn ("Unknown event" <> show ev) >> return Empty
 about Init =
   updateText "app" "This is the N2O Hello World App"
 about ev = do

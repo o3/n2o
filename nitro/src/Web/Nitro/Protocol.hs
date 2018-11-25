@@ -4,10 +4,8 @@ module Web.Nitro.Protocol where
 import Control.Monad (forM_)
 import Control.Monad.IO.Class
 import qualified Data.Map.Strict as M
-import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString as BS
-import qualified Data.Binary as B
-import qualified Data.ByteString.Lazy.Char8 as CL8
+import qualified Data.ByteString.Char8 as C8
 import Data.IORef
 import Network.N2O.Internal
 import Web.Nitro.Internal
@@ -25,7 +23,8 @@ nitroProto message = do
       return $ Reply (reply rendered)
     msg@(N2ONitro (NitroPickle _source pickled linked)) -> do
       forM_ (M.toList linked) (uncurry put)
-      case dePickle pickled of
+      depickled <- dePickle pickled
+      case depickled of
         Just x -> do
           handle (Message x)
           actions <- getActions
@@ -36,14 +35,14 @@ nitroProto message = do
       handle Terminate
       return Empty
   where
-    reply bs = Io bs L.empty
+    reply bs = Io bs BS.empty
     renderActions' actions =
       case actions of
-        [] -> return L.empty
+        [] -> return BS.empty
         actions -> do
           putActions []
           first <- renderActions actions
           actions2 <- getActions
           second <- renderActions actions2
           putActions []
-          return $ first <> CL8.pack ";" <> second
+          return $ first <> C8.pack ";" <> second

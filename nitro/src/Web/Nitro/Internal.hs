@@ -4,14 +4,10 @@ module Web.Nitro.Internal where
 
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class
-import qualified Data.Binary as B
+import qualified Data.Serialize as B
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as C8
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as CL8
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.IORef
 import qualified Data.Map.Strict as M
@@ -19,21 +15,22 @@ import Data.Map.Strict((!?))
 import Network.N2O hiding (Event)
 import Web.Nitro.Elements (Element(..))
 import Web.Nitro.Elements.Render (render)
+import Web.ClientSession
 
 -- | Top level sum of protocols
 data N2OProto a
   = N2ONitro (Nitro a)
-  | Io BL.ByteString
-       BL.ByteString
+  | Io BS.ByteString
+       BS.ByteString
   | Nop
   deriving (Show)
 
 -- | Nitro protocol message type
 data Nitro a
-  = NitroInit BL.ByteString
-  | NitroPickle { pickleSource :: BL.ByteString
-                , picklePickled :: BL.ByteString
-                , pickleLinked :: M.Map BS.ByteString BL.ByteString }
+  = NitroInit BS.ByteString
+  | NitroPickle { pickleSource :: BS.ByteString
+                , picklePickled :: BS.ByteString
+                , pickleLinked :: M.Map BS.ByteString BS.ByteString }
   | NitroDone
   deriving (Show)
 
@@ -42,13 +39,13 @@ type StateRef a = IORef (State a)
 data State a = MkState
   { stActions :: [Action a]
   , stContext :: Context N2OProto a (StateRef a)
-  , stDict    :: M.Map BS.ByteString BL.ByteString }
+  , stDict    :: M.Map BS.ByteString BS.ByteString }
 
 -- | Action that can be rendered as JavaScript events
 data Action a
   = AEvent (Event a)
   | AElement (Element a)
-  | ARaw BL.ByteString
+  | ARaw BS.ByteString
   deriving (Show)
 
 -- | A JavaScript event
@@ -71,7 +68,7 @@ wire a = do
   return Empty
 
 -- | Render list of actions to JavaScript
-renderActions :: [Action a] -> N2O (StateRef a) BL.ByteString
+renderActions :: [Action a] -> N2O (StateRef a) BS.ByteString
 renderActions [] = return ""
 renderActions (a:as) = do
   r <- renderAction a
@@ -79,7 +76,7 @@ renderActions (a:as) = do
   return (r <> ";" <> rs)
 
 -- | Render an action
-renderAction :: Action a -> N2O (StateRef a) BL.ByteString
+renderAction :: Action a -> N2O (StateRef a) BS.ByteString
 renderAction (ARaw bs) = return bs
 renderAction (AEvent ev) = renderEvent ev
 renderAction (AElement el) = do
@@ -90,7 +87,7 @@ renderAction (AElement el) = do
   return ""
 
 -- | Render list of elements to the HTML
-renderElements :: [Element a] -> N2O (StateRef a) BL.ByteString
+renderElements :: [Element a] -> N2O (StateRef a) BS.ByteString
 renderElements [] = return ""
 renderElements (e:es) = do
   r <- renderElement e
@@ -98,56 +95,62 @@ renderElements (e:es) = do
   return (r <> rs)
 
 -- | Render element to the HTML
-renderElement :: Element a -> N2O (StateRef a) BL.ByteString
+renderElement :: Element a -> N2O (StateRef a) BS.ByteString
 renderElement = (fmap render) . return
 
 -- | Render event
-renderEvent :: Event a -> N2O (StateRef a) BL.ByteString
+renderEvent :: Event a -> N2O (StateRef a) BS.ByteString
 renderEvent Event {..} = do
   ref <- ask
   Context{cxPickle=pickle} <- getContext
+  pickled <- pickle eventPostback
   case eventSource of
-    [] -> return BL.empty
+    [] -> return BS.empty
     src ->
       return $
-      "{ var x=qi('" <> BL.fromStrict eventTarget <> "'); x && x.addEventListener('" <> BL.fromStrict eventType <>
+      "{ var x=qi('" <> eventTarget <> "'); x && x.addEventListener('" <> eventType <>
       "',function(event){ if (validateSources([" <> strJoin (map (\x -> "'" <> x <> "'") src) <>
-      "])) { ws.send(enc(tuple(atom('pickle'),bin('" <> BL.fromStrict eventTarget <>
-      "'),bin('" <> pickle eventPostback <>
-      "'),[" <> strJoin (map renderSource src) <>
+      "])) { ws.send(enc(tuple(atom('pickle'),bin('" <> eventTarget <>
+      "'),bin('" <> pickled <> "'),[" <> strJoin (map renderSource src) <>
       "]))); } else console.log('Validation error'); })}"
   where
     renderSource :: BS.ByteString -> BS.ByteString
     renderSource s = "tuple(atom('" <> s <> "'),querySource('" <> s <> "'))"
-    strJoin :: [BS.ByteString] -> BL.ByteString
-    strJoin = BL.fromStrict . BS.intercalate ","
+    strJoin :: [BS.ByteString] -> BS.ByteString
+    strJoin = BS.intercalate ","
 
 -- | Update text content of the element with the specified @id@
-updateText :: BS.ByteString -> TL.Text -> N2O (StateRef a) (Result a)
+updateText :: BS.ByteString -> T.Text -> N2O (StateRef a) (Result a)
 updateText target s = wire
-  (ARaw ("qi('" <> BL.fromStrict target <> "').innerText='"
-         <> TL.encodeUtf8 s <> "'"))
+  (ARaw ("qi('" <> target <> "').innerText='"
+         <> T.encodeUtf8 s <> "'"))
 
 insertBottom :: BS.ByteString -> Element a -> N2O (StateRef a) (Result a)
 insertBottom target elem = do
   content <- renderElement elem
   let action =
         "(function(){ var div = qn('div'); div.innerHTML = '" <>
-        TL.decodeUtf8 content <> "';qi('" <>
-        TL.decodeUtf8 (BL.fromStrict target) <>
+        T.decodeUtf8 content <> "';qi('" <>
+        T.decodeUtf8 target <>
         "').appendChild(div.firstChild); })();"
-  wire $ ARaw $ TL.encodeUtf8 action
+  wire $ ARaw $ T.encodeUtf8 action
 
 -- | Default pickler
-defPickle :: (Show a) => a -> BL.ByteString
-defPickle = B64.encode . CL8.pack . show
+defPickle :: (B.Serialize a, MonadIO m) => a -> m BS.ByteString
+defPickle a =
+  let bs = B.encode a in
+  liftIO $ getDefaultKey >>= \key ->
+  liftIO $ encryptIO key bs
 
 -- | Default depickler
-defDePickle :: (Read a) => BL.ByteString -> Maybe a
+defDePickle :: (B.Serialize a, MonadIO m) => BS.ByteString -> m (Maybe a)
 defDePickle bs =
-  case B64.decode bs of
-    Right x -> Just $ read $ CL8.unpack x
-    _ -> Nothing
+  liftIO $ getDefaultKey >>= \key ->
+  case decrypt key bs of
+    Just bin -> case B.decode $ bin of
+                  Right x -> return $ Just x
+                  _ -> return Nothing
+    _ -> return Nothing
 
 -- | Get action list from the local mutable state
 getActions :: N2O (StateRef a) [Action a]
@@ -163,19 +166,21 @@ putActions actions = do
   liftIO $ modifyIORef ref (\st@MkState{} -> st{stActions=actions})
 
 -- | Put data to the local state
-put :: (B.Binary bin) => BS.ByteString -> bin -> N2O (StateRef a) ()
+put :: (B.Serialize bin) => BS.ByteString -> bin -> N2O (StateRef a) ()
 put k v = do
   ref <- ask
   liftIO $ modifyIORef ref (\st@MkState{stDict=dict} -> st{stDict=(M.insert k (B.encode v) dict)})
 
 -- | Get data from the local state
-get :: (B.Binary bin) => BS.ByteString -> N2O (StateRef a) (Maybe bin)
+get :: (B.Serialize bin) => BS.ByteString -> N2O (StateRef a) (Maybe bin)
 get k = do
   ref <- ReaderT return
   st <- liftIO $ readIORef ref
   let m = stDict st
   case m !? k of
-    Just v -> return $ Just (B.decode v)
+    Just v -> case (B.decode v) of
+                Right x -> return $ Just x
+                _ -> return Nothing
     _ -> return Nothing
 
 getContext :: N2O (StateRef a) (Context N2OProto a (IORef (State a)))

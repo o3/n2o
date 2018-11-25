@@ -29,7 +29,7 @@ executable n2o-sample
               , n2o >= 0.11
               , n2o-web >= 0.11
               , n2o-nitro >= 0.11
-              , binary
+              , cereal
               , bytestring
               , text
               , websockets

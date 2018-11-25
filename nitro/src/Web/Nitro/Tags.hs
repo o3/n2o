@@ -2,7 +2,6 @@
 module Web.Nitro.Tags where
 
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
 import Prelude hiding (void)
 
 void :: BS.ByteString -> Bool
@@ -14,9 +13,9 @@ displayProp :: (BS.ByteString,BS.ByteString) -> BS.ByteString
 displayProp (_,"") = ""
 displayProp (k,v) = " " <> k <> "=\"" <> v <> "\""
 
-emitTag :: BS.ByteString -> BL.ByteString -> [(BS.ByteString, BS.ByteString)] -> BL.ByteString
+emitTag :: BS.ByteString -> BS.ByteString -> [(BS.ByteString, BS.ByteString)] -> BS.ByteString
 emitTag tag "" props
- | void tag = "<" <> BL.fromStrict tag <> (BL.fromStrict . mconcat) (fmap displayProp props) <> ">"
- | otherwise = "<" <> BL.fromStrict tag <> (BL.fromStrict . mconcat) (fmap displayProp props) <> "/>"
-emitTag tag content props = "<" <> BL.fromStrict tag <> (BL.fromStrict . mconcat) (fmap displayProp props)
-                         <> ">" <> content <> "</" <> BL.fromStrict tag <> ">"
+ | void tag = "<" <> tag <> mconcat (fmap displayProp props) <> ">"
+ | otherwise = "<" <> tag <> mconcat (fmap displayProp props) <> "/>"
+emitTag tag content props = "<" <> tag <> mconcat (fmap displayProp props)
+                         <> ">" <> content <> "</" <> tag <> ">"

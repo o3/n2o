@@ -3,12 +3,8 @@ module Web.Nitro.Elements (Element(..)) where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
-import qualified Data.ByteString.Lazy.Char8 as CL8
 
 #include "nitro.h"
 
@@ -16,7 +12,7 @@ data Element a =
    MkBase
  { ELEMENT_BASE() }
  | MkLiter
- { ELEMENT_BASE(), htmlEncode::Bool, text::TL.Text }
+ { ELEMENT_BASE(), htmlEncode::Bool, text::T.Text }
  | MkList
  { ELEMENT_BASE(), ordered::Bool }
  | MkDropDown

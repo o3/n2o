@@ -18,12 +18,9 @@ module Network.N2O.Internal
  ) where
 
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text.Lazy as TL
+import qualified Data.Text as T
 import Data.IORef
 import Data.Map.Strict (Map, (!?), insert)
-import qualified Data.Map.Strict as M
-import qualified Data.Text.Lazy as TL
 import qualified Data.Map.Strict as M
 import Control.Monad.Trans.Reader
 import Control.Exception (SomeException)
@@ -44,14 +41,15 @@ data Req = Req
 -- for the protocol handler's input type. @(a :: *)@ - base type for the
 -- event handler's input type. I.e. @(f a)@ gives input type for the
 -- protocol handler. @(Event a)@ gives input type for the event handler.
-data Context (f :: * -> *) a state = Context
+data Context (f :: * -> *) a state where
+ Context ::
   { cxHandler :: Event a -> N2O state (Result a)
   , cxReq :: Req
   , cxMiddleware :: [Context f a state -> Context f a state]
   , cxProtos :: [Proto (f a) state]
-  , cxDePickle :: BL.ByteString -> Maybe a
-  , cxPickle :: a -> BL.ByteString
-  }
+  , cxDePickle :: BS.ByteString -> N2O state (Maybe a)
+  , cxPickle :: a -> N2O state (BS.ByteString)
+  } -> Context f a state
 
 -- | Result of the message processing
 data Result a

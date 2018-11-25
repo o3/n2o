@@ -14,7 +14,9 @@ to the N2O Protocol Loop.
 module Network.N2O.Web
  ( module Network.N2O.Web.WebSockets
  , module Network.N2O.Web.Http
+ , module Web.Nitro
  ) where
 
 import Network.N2O.Web.WebSockets
 import Network.N2O.Web.Http
+import Web.Nitro

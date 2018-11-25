@@ -9,15 +9,14 @@ import Control.Exception (catch, finally)
 import Control.Monad (forM_, forever, mapM_)
 import Data.BERT
 import qualified Data.Binary as B
-import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as LC8
+import qualified Data.ByteString.Char8 as C8
 import Data.CaseInsensitive (mk)
 import Data.IORef
 import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as M
-import qualified Data.Text.Lazy as T
-import Data.Text.Lazy.Encoding
+import Data.Text as T
+import Data.Text.Encoding as T
 import Network.N2O.Internal
 import Network.Socket (Socket)
 import Web.Nitro
@@ -96,7 +95,7 @@ receiveN2O conn ref = do
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"
     WS.Text bs _ ->
-      case LC8.stripPrefix "N2O," bs of
+      case C8.stripPrefix "N2O," (BL.toStrict bs) of
         Just pid -> do
           reply <- runReaderT (protoRun (N2ONitro $ NitroInit pid) protos) ref
           process conn reply
@@ -106,15 +105,15 @@ receiveN2O conn ref = do
 -- | Convert Binary Erlang Terms (BERT) to the 'N2OProto' specification
 fromBert :: Term -> Maybe (N2OProto a)
 fromBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) =
-  Just $ N2ONitro (NitroInit pid)
+  Just $ N2ONitro (NitroInit (BL.toStrict pid))
 fromBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
-  Just $ N2ONitro (NitroPickle source pickled (convert linked))
+  Just $ N2ONitro (NitroPickle (BL.toStrict source) (BL.toStrict pickled) (convert linked))
   where
     convert [] = M.empty
     convert (TupleTerm [AtomTerm k, BytelistTerm v]:vs) =
-      M.insert (C8.pack k) v (convert vs)
+      M.insert (C8.pack k) (BL.toStrict v) (convert vs)
 fromBert _ = Nothing
 
 toBert :: N2OProto a -> Term
 toBert (Io eval dat) =
-  TupleTerm [AtomTerm "io", BytelistTerm eval, BytelistTerm dat]
+  TupleTerm [AtomTerm "io", BytelistTerm (BL.fromStrict eval), BytelistTerm (BL.fromStrict dat)]
