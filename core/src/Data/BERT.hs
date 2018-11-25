@@ -11,14 +11,15 @@ import Control.Applicative
 import Data.Bits
 import Data.Char
 import Data.Int
-import Data.Binary
-import Data.Binary.Put
-import Data.Binary.Get
+import Data.Word
+import Data.Serialize
+import Data.Serialize.Put
+import Data.Serialize.Get
 import Data.List
 import Data.Time
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString.Lazy.Char8 as C
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Text.Printf
@@ -182,14 +183,14 @@ instance (Ord k, BERT k, BERT v) => BERT (Map k v) where
   readBERT _ = fail "Invalid map type"
 
 -- Binary encoding & decoding.
-instance Binary Term where
+instance Serialize Term where
   put term = putWord8 131 >> putTerm term
   get      = getWord8 >>= \case
                  131 -> getTerm
                  _   -> fail "bad magic"
 
 -- | Binary encoding of a single term (without header)
-putTerm :: Term -> PutM ()
+putTerm :: Term -> Put
 putTerm (IntTerm value)
   | 0 <= value && value < 256 = tag 97 >> put8u value
   | otherwise                 = tag 98 >> put32s value
@@ -320,7 +321,7 @@ put32u :: (Integral a) => a -> Put
 put32u = putWord32be . fromIntegral
 put32s :: (Integral a) => a -> Put
 put32s = putWord32be . (fromIntegral :: Int32 -> Word32) . fromIntegral
-putL = putLazyByteString
+putL = putByteString
 
 get8u :: (Integral a) => Get a
 get8u  = fromIntegral <$> getWord8
@@ -331,7 +332,7 @@ get32u = fromIntegral <$> getWord32be
 get32s :: (Integral a) => Get a
 get32s = fromIntegral . (fromIntegral :: Word32 -> Int32) <$> getWord32be
 getL :: (Integral a) => a -> Get ByteString
-getL = getLazyByteString . fromIntegral
+getL = getByteString . fromIntegral
 
 tag :: Word8 -> Put
 tag = putWord8

@@ -8,7 +8,7 @@ module Network.N2O.Web.WebSockets
 import Control.Exception (catch, finally)
 import Control.Monad (forM_, forever, mapM_)
 import Data.BERT
-import qualified Data.Binary as B
+import qualified Data.Serialize as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C8
 import Data.CaseInsensitive (mk)
@@ -67,8 +67,8 @@ listen conn ref =
        case message of
          WS.Text "PING" _ -> WS.sendTextData conn ("PONG" :: T.Text)
          WS.Binary bin ->
-           case B.decodeOrFail bin of
-             Right (_, _, term) ->
+           case B.decode (BL.toStrict bin) of
+             Right term ->
                case fromBert term of
                  Just msg -> do
                    reply <- runReaderT (protoRun msg protos) ref
@@ -105,15 +105,15 @@ receiveN2O conn ref = do
 -- | Convert Binary Erlang Terms (BERT) to the 'N2OProto' specification
 fromBert :: Term -> Maybe (N2OProto a)
 fromBert (TupleTerm [AtomTerm "init", BytelistTerm pid]) =
-  Just $ N2ONitro (NitroInit (BL.toStrict pid))
+  Just $ N2ONitro (NitroInit pid)
 fromBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, ListTerm linked]) =
-  Just $ N2ONitro (NitroPickle (BL.toStrict source) (BL.toStrict pickled) (convert linked))
+  Just $ N2ONitro (NitroPickle source pickled (convert linked))
   where
     convert [] = M.empty
     convert (TupleTerm [AtomTerm k, BytelistTerm v]:vs) =
-      M.insert (C8.pack k) (BL.toStrict v) (convert vs)
+      M.insert (C8.pack k) v (convert vs)
 fromBert _ = Nothing
 
 toBert :: N2OProto a -> Term
 toBert (Io eval dat) =
-  TupleTerm [AtomTerm "io", BytelistTerm (BL.fromStrict eval), BytelistTerm (BL.fromStrict dat)]
+  TupleTerm [AtomTerm "io", BytelistTerm eval, BytelistTerm dat]
