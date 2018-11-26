@@ -1,76 +1,19 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Web.Nitro.Elements.Render where
+module Web.Nitro.Render where
 
 import Control.Monad.IO.Class
-import Web.Nitro.Elements
+import Web.Nitro.Types
 import Web.Nitro.Tags
+import Web.Nitro.Encode
 import qualified Data.Serialize as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import Data.Char (isAlphaNum, ord, toLower)
-import Numeric (showHex)
-import Web.ClientSession
-
-infixr 5 :<
-pattern b :< bs  <- (T.uncons -> Just (b, bs))
-pattern TEmpty   <- (T.uncons -> Nothing)
-
--- | Escape untrusted text to prevent XSS
-jsEscape :: C8.ByteString -> T.Text
-jsEscape = jsEscapeT . T.decodeUtf8
-
--- | Escape untrusted text to prevent XSS
-jsEscapeT :: T.Text -> T.Text
-jsEscapeT t = escape t T.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $
-      if isAlphaNum x then
-        T.snoc acc x
-      else
-        acc <> "\\x" <> T.pack (flip showHex "" . ord $ x)
-
-htmlEscape :: T.Text -> T.Text
-htmlEscape t = escape t T.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
-    escapeChar '&' = "&amp;"
-    escapeChar '<' = "&lt;"
-    escapeChar '>' = "&gt;"
-    escapeChar '"' = "&quot;"
-    escapeChar '\'' = "&#x27;"
-    escapeChar '/' = "&#x2F;"
-    escapeChar x = T.singleton x
-
-htmlEscapeAggressive :: T.Text -> T.Text
-htmlEscapeAggressive t = escape t T.empty
-  where
-    escape TEmpty acc = acc
-    escape (x :< xs) acc = escape xs $ acc <> escapeChar x
-    escapeChar x
-      | isAlphaNum x || ord x > 255 = T.singleton x
-      | otherwise = "&#x" <> T.pack (flip showHex "" . ord $ x) <> ";"
-
-pickle :: (B.Serialize a, MonadIO m) => a -> m BS.ByteString
-pickle a =
-  let bs = B.encode a in
-  liftIO $ getDefaultKey >>= \key ->
-  liftIO $ encryptIO key bs
-
-depickle :: (B.Serialize a, MonadIO m) => BS.ByteString -> m (Maybe a)
-depickle bs =
-  liftIO $ getDefaultKey >>= \key ->
-  case decrypt key bs of
-    Just bin -> case B.decode $ bin of
-                  Right x -> return $ Just x
-                  _ -> return Nothing
-    _ -> return Nothing
 
 class Renderable r where
   render_ :: (MonadIO m) => r -> m (BS.ByteString, BS.ByteString)

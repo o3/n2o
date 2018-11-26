@@ -22,12 +22,12 @@ source-repository head
 library
   exposed-modules:
                   Web.Nitro
+                , Web.Nitro.Types
                 , Web.Nitro.Elements
-                , Web.Nitro.Elements.Impl
-                , Web.Nitro.Elements.Render
-                , Web.Nitro.Protocol
+                , Web.Nitro.Render
                 , Web.Nitro.Tags
                 , Web.Nitro.Internal
+                , Web.Nitro.Encode
   include-dirs: include
   other-modules:
       Paths_n2o_nitro

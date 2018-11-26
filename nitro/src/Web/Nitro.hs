@@ -11,18 +11,17 @@ Nitro DSL to build interactive user interfaces
 
 -}
 module Web.Nitro
- ( module Web.Nitro.Protocol
- , module Web.Nitro.Elements
+ ( module Web.Nitro.Elements
  , module Web.Nitro.Internal
  , module Web.Nitro.Tags
- , module Web.Nitro.Elements.Impl
- , module Web.Nitro.Elements.Render
+ , module Web.Nitro.Types
+ , module Web.Nitro.Render
+ , module Web.Nitro.Encode
  ) where
 
-import Web.Nitro.Protocol
-import Web.Nitro.Elements
+import Web.Nitro.Types
 import Web.Nitro.Internal
 import Web.Nitro.Tags
-import Web.Nitro.Elements.Impl
-import Web.Nitro.Elements.Render
-
+import Web.Nitro.Elements
+import Web.Nitro.Render
+import Web.Nitro.Encode

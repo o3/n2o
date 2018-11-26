@@ -7,8 +7,8 @@ import qualified Data.Serialize as B
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import Web.Nitro.Elements
-import Web.Nitro.Elements.Render
+import Web.Nitro.Types (Element(MkTr), Event)
+import Web.Nitro.Render
 
 class (MonadIO m) => NITRO m where
   getActions :: m BS.ByteString
