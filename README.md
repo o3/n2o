@@ -7,7 +7,7 @@ Features
 
 * Endpoints: poor man's WebSocket and static HTTP server
 * Formatters: BERT
-* Protocols: <a href="https://haskell.n2o.space/man/protocols.htm">CLIENT</a>, <a href="https://haskell.n2o.space/man/protocols.htm">NITRO</a>
+* Protocols: <a href="https://haskell.n2o.space/man/protocols.htm">NITRO</a>
 * High Performance Protocol Relay
 * Smallest possible codebase — 500 LOC
 
