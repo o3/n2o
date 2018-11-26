@@ -1,15 +1,14 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings, FlexibleContexts #-}
 
-module Network.N2O.Web.WebSockets
-  ( wsApp
-  , mkPending
-  ) where
+module Network.N2O.Web.WebSockets (wsApp, mkPending, N2OProto, nitroProto, mkHandler, Cx) where
 
 import Control.Exception (catch, finally)
 import Control.Monad (forM_, forever, mapM_)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.BERT
 import qualified Data.Serialize as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
 import Data.CaseInsensitive (mk)
 import Data.IORef
@@ -24,7 +23,59 @@ import qualified Network.WebSockets as WS
 import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
 
-wsApp :: Context N2OProto a (StateRef a) -> WS.ServerApp
+-- | Top level sum of protocols
+data N2OProto a
+  = N2ONitro (Nitro a)
+  | Io BS.ByteString
+       BS.ByteString
+  | Nop
+  deriving (Show)
+
+type Cx a = Context N2OProto a
+type CxHandler a = Cx a -> Cx a
+
+instance NITRO (N2O N2OProto a) where
+  putActions a = do
+    ref <- ask
+    liftIO $ modifyIORef ref (\cx -> cx{cxActions = a})
+  getActions = do
+    ref <- ask
+    Context{cxActions = acts} <- liftIO $ readIORef ref
+    return acts
+
+mkHandler h = \m -> do
+  x <- h m
+  return Empty
+
+nitroProto :: (Show a, B.Serialize a) => Proto N2OProto a
+nitroProto message = do
+  liftIO $ putStrLn ("NITRO : " <> show message)
+  cx@Context {cxHandler = handle} <- getContext
+  case message of
+    msg@(N2ONitro (NitroInit pid)) -> do
+      handle Init
+      acts <- getActions
+      putActions ""
+      liftIO $ putStrLn ("NITRO : " <> show acts)
+      return $ Reply $ reply acts
+    msg@(N2ONitro (NitroPickle _source pickled linked)) -> do
+      forM_ (M.toList linked) (uncurry put)
+      depickled <- depickle pickled
+      case depickled of
+        Just x -> do
+          handle (Message x)
+          acts <- getActions
+          putActions ""
+          liftIO $ putStrLn ("NITRO : " <> show acts)
+          return $ Reply (reply acts)
+        _ -> return Unknown
+    msg@(N2ONitro NitroDone) -> do
+      handle Terminate
+      return Empty
+  where
+    reply bs = Io bs BS.empty
+
+wsApp :: Context N2OProto a -> WS.ServerApp
 wsApp cx pending = do
   let path = WS.requestPath $ WS.pendingRequest pending
       cx1 = cx {cxReq = mkReq {reqPath = path}}
@@ -35,7 +86,7 @@ wsApp cx pending = do
           (h:hs') -> applyHandlers hs' (h ctx)
       cx2 = applyHandlers handlers cx1
   conn <- WS.acceptRequest pending
-  ref <- newIORef $ MkState [] cx2 M.empty
+  ref <- newIORef cx2
   WS.forkPingThread conn 30
   listen conn ref
 
@@ -57,11 +108,10 @@ mkPending opts sock req = do
       , WSConn.pendingStream = stream
       }
 
-listen :: WS.Connection -> IORef (State a) -> IO ()
+listen :: WS.Connection -> IORef (Context N2OProto a) -> IO ()
 listen conn ref =
   do pid <- receiveN2O conn ref
-     st <- readIORef ref
-     let cx@Context {cxProtos = protos} = stContext st
+     cx@Context {cxProtos = protos} <- readIORef ref
      forever $ do
        message <- WS.receiveDataMessage conn
        case message of
@@ -77,20 +127,18 @@ listen conn ref =
              _ -> return ()
          _ -> error "Unknown message"
      `finally` do
-    st <- readIORef ref
-    let cx@Context {cxProtos = protos} = stContext st
+    cx@Context {cxProtos = protos} <- readIORef ref
     runReaderT (protoRun (N2ONitro NitroDone) protos) ref
     return ()
 
 process conn reply =
   case reply of
     Reply a -> WS.sendBinaryData conn (B.encode $ toBert a)
-    _ -> error "Unknown response type"
+    x -> error $ "Unknown response type " <> show x
 
 receiveN2O conn ref = do
   message <- WS.receiveDataMessage conn
-  st <- readIORef ref
-  let cx@Context {cxProtos = protos} = stContext st
+  cx@Context {cxProtos = protos} <- readIORef ref
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"

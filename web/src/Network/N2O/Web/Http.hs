@@ -9,16 +9,14 @@ import qualified Data.ByteString.Char8 as C
 import Network.Socket hiding (recv, send)
 import Network.Socket.ByteString
 import Network.N2O.Internal
-import Network.N2O.Web.WebSockets
+import Network.N2O.Web.WebSockets (wsApp, N2OProto, mkPending)
 import Prelude hiding (takeWhile)
 import Data.Attoparsec.ByteString hiding (try)
-import Data.CaseInsensitive
+import Data.CaseInsensitive (mk)
 import qualified Network.WebSockets as WS
-import Web.Nitro
 import Control.Concurrent.Async
 import System.IO
 import Text.Printf
-import Data.IORef
 
 data Resp = Resp
   { respCode :: Int
@@ -28,7 +26,7 @@ data Resp = Resp
 
 mkResp = Resp { respCode = 200, respHead = [], respBody = BS.empty }
 
-runServer :: String -> Int -> Context N2OProto a (StateRef a) -> IO ()
+runServer :: String -> Int -> Context N2OProto a -> IO ()
 runServer host port cx = do
   hSetBuffering stdout NoBuffering
   printf "Started server at %s:%d\n" host port
@@ -48,7 +46,7 @@ runServer host port cx = do
       listen sock 10
       return sock
 
-acceptConnections :: Context N2OProto a (StateRef a) -> Socket -> IO ()
+acceptConnections :: Context N2OProto a -> Socket -> IO ()
 acceptConnections cx sock = do
   (handle, host_addr) <- accept sock
   forkIO (catch
@@ -56,7 +54,7 @@ acceptConnections cx sock = do
            (\e@(SomeException _) -> print e))
   acceptConnections cx sock
 
-talk :: Context N2OProto a (StateRef a) -> Socket -> SockAddr -> IO ()
+talk :: Context N2OProto a -> Socket -> SockAddr -> IO ()
 talk cx sock addr = do
   bs <- recv sock 4096
   let either = parseReq bs

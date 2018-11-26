@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric, OverloadedStrings, CPP #-}
-module Web.Nitro.Elements (Element(..)) where
+module Web.Nitro.Elements where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -64,3 +64,12 @@ data Element a =
  , maxlength::BS.ByteString, name::BS.ByteString, placeholder::BS.ByteString, readonly::Bool, required::Bool
  , rows::BS.ByteString, wrap::BS.ByteString, value::BS.ByteString }
  deriving (Show)
+
+-- | A JavaScript event
+data Event a = Event
+  { eventTarget   :: BS.ByteString
+  , eventPostback :: a
+  , eventType     :: BS.ByteString
+  , eventSource   :: [BS.ByteString]
+  } deriving (Show)
+

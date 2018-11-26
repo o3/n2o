@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings, KindSignatures, GADTs #-}
 
 {-|
@@ -16,13 +17,14 @@ module Network.N2O.Internal
  ( module Network.N2O.Internal
  , module Control.Monad.Trans.Reader
  ) where
-
+import qualified Data.Serialize as B
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import Data.IORef
 import Data.Map.Strict (Map, (!?), insert)
 import qualified Data.Map.Strict as M
 import Control.Monad.Trans.Reader
+import Control.Monad.IO.Class (liftIO)
 import Control.Exception (SomeException)
 
 -- | An HTTP header
@@ -41,15 +43,15 @@ data Req = Req
 -- for the protocol handler's input type. @(a :: *)@ - base type for the
 -- event handler's input type. I.e. @(f a)@ gives input type for the
 -- protocol handler. @(Event a)@ gives input type for the event handler.
-data Context (f :: * -> *) a state where
+data Context (f :: * -> *) a where
  Context ::
-  { cxHandler :: Event a -> N2O state (Result a)
+  { cxHandler :: Event a -> N2O f a (Result a)
   , cxReq :: Req
-  , cxMiddleware :: [Context f a state -> Context f a state]
-  , cxProtos :: [Proto (f a) state]
-  , cxDePickle :: BS.ByteString -> N2O state (Maybe a)
-  , cxPickle :: a -> N2O state (BS.ByteString)
-  } -> Context f a state
+  , cxMiddleware :: [Context f a -> Context f a]
+  , cxProtos :: [Proto f a]
+  , cxActions :: BS.ByteString
+  , cxDict :: M.Map BS.ByteString BS.ByteString
+  } -> Context f a
 
 -- | Result of the message processing
 data Result a
@@ -59,8 +61,11 @@ data Result a
   | Empty
   deriving (Show, Eq)
 
+-- class Proto p where
+--   protoInfo :: p -> (f :: * -> *) a -> N2O f a (Result (f a))
+
 -- | N2O protocol handler
-type Proto a state = a -> N2O state (Result a)
+type Proto (f :: * -> *) a = (f a) -> N2O f a (Result (f a))
 
 -- | Event data type
 data Event a
@@ -69,16 +74,39 @@ data Event a
   | Terminate
   deriving Show
 
-type N2O state = ReaderT state IO
+type N2O f a = ReaderT (IORef (Context f a)) IO
+
+-- | Put data to the local state
+put :: (B.Serialize bin) => BS.ByteString -> bin -> N2O f a ()
+put k v = do
+  ref <- ask
+  liftIO $ modifyIORef ref (\st@Context{cxDict=dict} -> st{cxDict=(M.insert k (B.encode v) dict)})
+
+-- | Get data from the local state
+get :: (B.Serialize bin) => BS.ByteString -> N2O f a (Maybe bin)
+get k = do
+  ref <- ReaderT return
+  st <- liftIO $ readIORef ref
+  let m = cxDict st
+  case m !? k of
+    Just v -> case (B.decode v) of
+                Right x -> return $ Just x
+                _ -> return Nothing
+    _ -> return Nothing
+
+getContext :: N2O f a (Context f a)
+getContext = do
+  ref <- ask
+  liftIO $ readIORef ref
 
 -- | 'Context' constructor
 mkCx = Context
   { cxReq = undefined
   , cxHandler = undefined
   , cxMiddleware = []
-  , cxDePickle = undefined
-  , cxPickle = undefined
   , cxProtos = []
+  , cxActions = ""
+  , cxDict = M.empty
   }
 
 -- | 'Req' constructor
@@ -89,15 +117,16 @@ nop :: Result a
 nop = Empty
 
 -- | N2O protocol loop
-protoRun :: f a -> [Proto (f a) state] -> N2O state (Result (f a))
-protoRun = loop []
+protoRun :: f a -> [Proto f a] -> N2O f a (Result (f a))
+protoRun = loop
   where
-    loop _ _ [] = return nop
-    loop acc msg (proto:protos) = do
+    loop :: f a -> [Proto f a] -> N2O f a (Result (f a))
+    loop _ [] = return nop
+    loop msg (proto:protos) = do
       res <- proto msg
       case res of
-        Unknown -> loop acc msg protos
+        Unknown -> loop msg protos
         Empty -> return Empty
         Reply msg1 -> return $ Reply msg1
-        a -> loop (a : acc) msg protos
+        a -> loop msg protos
 
