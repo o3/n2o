@@ -63,6 +63,8 @@ data Element a =
  { ELEMENT_BASE(), autofocus::Bool, cols::BS.ByteString, dirname::BS.ByteString, disabled::Bool, form::BS.ByteString
  , maxlength::BS.ByteString, name::BS.ByteString, placeholder::BS.ByteString, readonly::Bool, required::Bool
  , rows::BS.ByteString, wrap::BS.ByteString, value::BS.ByteString }
+ | MkTr
+ { ELEMENT_BASE(), cells::BS.ByteString }
  deriving (Show)
 
 -- | A JavaScript event

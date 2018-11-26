@@ -81,15 +81,12 @@ instance (B.Serialize a) => Renderable (Event a) where
  -- render_ :: Event a -> N2O N2OProto a BS.ByteString
  render_ Event{..} = do
   pickled <- pickle (eventPostback :: a)
-  case eventSource of
-    [] -> return ("", "")
-    src ->
-      return $ ("",
-      "{ var x=qi('" <> eventTarget <> "'); x && x.addEventListener('" <> eventType <>
-      "',function(event){ if (validateSources([" <> strJoin (map (\x -> "'" <> x <> "'") src) <>
-      "])) { ws.send(enc(tuple(atom('pickle'),bin('" <> eventTarget <>
-      "'),bin('" <> pickled <> "'),[" <> strJoin (map renderSource src) <>
-      "]))); } else console.log('Validation error'); })}")
+  return $ ("",
+            "{ var x=qi('" <> eventTarget <> "'); x && x.addEventListener('" <> eventType <>
+            "',function(event){ if (validateSources([" <> strJoin (map (\x -> "'" <> x <> "'") eventSource) <>
+            "])) { ws.send(enc(tuple(atom('pickle'),bin('" <> eventTarget <>
+            "'),bin('" <> pickled <> "'),[" <> strJoin (map renderSource eventSource) <>
+            "]))); } else console.log('Validation error'); })}")
   where
     renderSource :: BS.ByteString -> BS.ByteString
     renderSource s = "tuple(atom('" <> s <> "'),querySource('" <> s <> "'))"
@@ -133,10 +130,12 @@ render el@MkTextarea{} = do
 render MkLiter {htmlEncode = htmlEncode, text = text} =
   return (T.encodeUtf8 $ if htmlEncode then htmlEscape text else text, "")
 render el@MkButton{} = do
-  ("", ev) <- render_ Event{ eventType="click"
-                           , eventPostback=postback el
-                           , eventTarget=id_ el
-                           , eventSource=source el }
+  ("", ev) <- case postback el of
+    Just pb -> render_ Event{ eventType="click"
+                            , eventPostback=pb
+                            , eventTarget=id_ el
+                            , eventSource=source el }
+    Nothing -> return ("","")
   (content, js) <- render_ (body el)
   let html =  emitTag "button" content
         ([("id",      id_ el),       ("class",    BS.intercalate " " (class_ el))

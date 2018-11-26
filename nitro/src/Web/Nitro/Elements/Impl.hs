@@ -85,9 +85,12 @@ textarea = let el = MkTextarea{ELEMENT_BASE_DEFAULTS1(),autofocus=False,cols="",
                      ,maxlength="",name="",placeholder="",readonly=False,required=False,rows="",wrap="",value=""}
            in el{contenteditable=True}
 
-button:: Element a
+button :: Element a
 button = MkButton{ELEMENT_BASE_DEFAULTS1(),autofocus=True,disabled=False,form="",formaction="",formmethod=""
                  ,formtarget="",formnovalidate=False,formenctype="",name="",type_="button",value=""}
 
 literal :: Element a
 literal = MkLiter {ELEMENT_BASE_DEFAULTS1(), htmlEncode = True, text = ""}
+
+tr :: Element a
+tr = MkTr { ELEMENT_BASE_DEFAULTS1(), cells = "" }
