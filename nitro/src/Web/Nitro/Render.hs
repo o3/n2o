@@ -5,14 +5,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Nitro.Render where
 
-import Control.Monad.IO.Class
-import Web.Nitro.Types
-import Web.Nitro.Tags
-import Web.Nitro.Encode
+import Control.Monad.IO.Class (MonadIO)
+import Web.Nitro.Types (Event(..), Element(..))
+import Web.Nitro.Tags (emitTag)
+import Web.Nitro.Encode (htmlEscape, pickle)
 import qualified Data.Serialize as B
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as C8
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 class Renderable r where
