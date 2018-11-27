@@ -49,14 +49,14 @@ mkHandler h = \m -> do
 
 nitroProto :: (Show a, B.Serialize a) => Proto N2OProto a
 nitroProto message = do
-  liftIO $ putStrLn ("NITRO : " <> show message)
+--  liftIO $ putStrLn ("NITRO : " <> show message)
   cx@Context {cxHandler = handle} <- getContext
   case message of
     msg@(N2ONitro (NitroInit pid)) -> do
       handle Init
       acts <- getActions
       putActions ""
-      liftIO $ putStrLn ("NITRO : " <> show acts)
+--      liftIO $ putStrLn ("NITRO : " <> show acts)
       return $ Reply $ reply acts
     msg@(N2ONitro (NitroPickle _source pickled linked)) -> do
       forM_ (M.toList linked) (uncurry put)
@@ -66,7 +66,7 @@ nitroProto message = do
           handle (Message x)
           acts <- getActions
           putActions ""
-          liftIO $ putStrLn ("NITRO : " <> show acts)
+--          liftIO $ putStrLn ("NITRO : " <> show acts)
           return $ Reply (reply acts)
         _ -> return Unknown
     msg@(N2ONitro NitroDone) -> do
