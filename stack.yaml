@@ -1,0 +1,6 @@
+resolver: lts-12.12
+packages:
+- .
+extra-deps:
+ - git: git@github.com:o3/nitro.git
+   commit: master
