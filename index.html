@@ -44,9 +44,9 @@
         <section>
         <figure>
         <code>
- git clone https://github.com/xafizoff/n2o && cd n2o
- stack build && stack exec n2o-sample
- open http://localhost:3000/samples/static/index.html
+ stack build
+ stack exec n2o-sample
+ open http://127.0.0.1:3000/samples/static/index.html
         </code>
         </figure>
         </section>
@@ -57,6 +57,18 @@
     <section>
 
         <h3>N2O Haskell</h3>
+
+        <p> N2O defines a way we scale protocols, database schema, applications and
+            services across companies, formatters, views and presentation layers.
+            At the core N2O folds a list of protocols and their handlers providing
+            a minimal type-level specification for general purpose application protocol tract.</p>
+
+        <p> As example this Haskell version of N2O is shipped with Nitro protocol
+            implementation, that listens the tract and push prerendered JavaScript
+            events back to the channel. This smart and simple reactive way
+            of client-server interaction first was used by Rusty Klophaus in
+            his Nitrogen web framework, that was pushed forward since then in
+            N2O by Andy Melnikov and Marat Khafizov.</p>
 
         <p>The philosophy behind N2O is a simplicity, cleanness, and purity.
            The core of N2O should be no more than 500 LOC.</p>

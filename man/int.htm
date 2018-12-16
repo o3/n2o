@@ -39,13 +39,12 @@
     , reqHead :: [Header]
     }
         </code></figure>
-        <figure><figcaption>Listing 2. HTTP Request Constructor</figcaption><code>
- mkReq = Req
-    { reqPath = "/"
-    , reqMeth = "GET"
-    , reqVers = "HTTP/1.1"
-    , reqHead = []
-    }
+        <figure><figcaption>Listing 2. HTTP Response</figcaption><code>
+ data Resp = Resp
+    { respCode :: Int
+    , respHead :: [Header]
+    , respBody :: BS.ByteString
+    } deriving (Show)
         </code></figure>
     </section>
     <section>
@@ -66,8 +65,7 @@
       deriving (Show, Eq)
         </code></figure>
         <figure><figcaption>Listing 5. N2O Context Record</figcaption><code>
- data Context (f :: * -> *) a where
-      Context ::
+ data Context (f :: * -> *) a where Context ::
     { cxHandler :: Event a -> N2O f a (Result a)
     , cxReq :: Req
     , cxMiddleware :: [Context f a -> Context f a]
@@ -89,6 +87,7 @@
     </section>
     <section>
         <h3>MONAD</h3>
+
         <figure><figcaption>Listing 7. N2O Monad</figcaption><code>
  type Proto (f :: * -> *) a
     = (f a) -> N2O f a (Result (f a))
