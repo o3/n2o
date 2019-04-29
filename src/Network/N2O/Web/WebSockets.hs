@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings, FlexibleContexts #-}
 
-module Network.N2O.Web.WebSockets (wsApp, mkPending, N2OProto, nitroProto, mkHandler, Cx) where
+module Network.N2O.Web.WebSockets (wsApp, mkPending, N2OProto(N2OClient), nitroProto, mkHandler, Cx) where
 
 import Control.Exception (catch, finally)
 import Control.Monad (forM_, forever, mapM_)
