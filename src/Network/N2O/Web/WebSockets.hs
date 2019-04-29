@@ -93,10 +93,9 @@ wsApp cx pending = do
   ref <- newIORef cx2
   WS.forkPingThread conn 30
   forkIO (listen conn ref)
+  rChan <- atomically $ dupTChan chan
   forever $ do
-    msg <- atomically $ do
-        rChan <- dupTChan chan
-        readTChan rChan
+    msg <- atomically $ readTChan rChan
     reply <- runReaderT (protoRun msg $ cxProtos cx2) ref
     process conn reply
 
@@ -131,10 +130,7 @@ listen conn ref =
              Right term ->
                case fromBert term of
                  Just msg -> do
-                   --reply <- runReaderT (protoRun msg protos) ref
-                   atomically $
-                     writeTChan chan msg
-                   -- process conn reply
+                   atomically $ writeTChan chan msg
                  _ -> return ()
              _ -> return ()
          _ -> error "Unknown message"
