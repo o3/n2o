@@ -56,6 +56,7 @@ data Context (f :: * -> *) a where
   , cxDict :: M.Map BS.ByteString BS.ByteString
   , cxPubSub :: TVar (M.Map BS.ByteString [TChan (f a)])
   , cxMailBox :: TChan (f a)
+  , cxSessions :: TVar (M.Map BS.ByteString BS.ByteString)
   } -> Context f a
 
 -- | Result of the message processing
@@ -140,6 +141,7 @@ mkCx = Context
   , cxDict = M.empty
   , cxPubSub = undefined
   , cxMailBox = undefined
+  , cxSessions = undefined
   }
 
 -- | 'Req' constructor

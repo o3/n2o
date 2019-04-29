@@ -33,9 +33,10 @@ runServer host port cx = do
   hSetBuffering stdout NoBuffering
   printf "Started server at %s:%d\n" host port
   pubsub <- newTVarIO M.empty
+  sessions <- newTVarIO M.empty
   acceptor <- async $ withSocketsDo $ do
     addr <- resolve host (show port)
-    bracket (open addr) close (acceptConnections cx{cxPubSub = pubsub})
+    bracket (open addr) close (acceptConnections cx{cxPubSub = pubsub,cxSessions = sessions})
   wait acceptor
   where
     resolve host port = do
