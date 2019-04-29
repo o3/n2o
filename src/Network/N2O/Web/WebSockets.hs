@@ -172,7 +172,7 @@ fromBert (TupleTerm [AtomTerm "pickle", BinaryTerm source, BinaryTerm pickled, L
   Just $ N2ONitro (NitroPickle source pickled (convert linked))
   where
     convert [] = M.empty
-    convert (TupleTerm [AtomTerm k, BytelistTerm v]:vs) =
+    convert (TupleTerm [AtomTerm k, BinaryTerm v]:vs) =
       M.insert (C8.pack k) v (convert vs)
 fromBert _ = Nothing
 
