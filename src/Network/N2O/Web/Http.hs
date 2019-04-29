@@ -17,6 +17,8 @@ import qualified Network.WebSockets as WS
 import Control.Concurrent.Async
 import System.IO
 import Text.Printf
+import qualified Data.Map.Strict as M
+import Control.Concurrent.STM.TVar (newTVarIO)
 
 data Resp = Resp
   { respCode :: Int
@@ -30,9 +32,10 @@ runServer :: String -> Int -> Context N2OProto a -> IO ()
 runServer host port cx = do
   hSetBuffering stdout NoBuffering
   printf "Started server at %s:%d\n" host port
+  pubsub <- newTVarIO M.empty
   acceptor <- async $ withSocketsDo $ do
     addr <- resolve host (show port)
-    bracket (open addr) close (acceptConnections cx)
+    bracket (open addr) close (acceptConnections cx{cxPubSub = pubsub})
   wait acceptor
   where
     resolve host port = do

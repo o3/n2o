@@ -22,6 +22,9 @@ import Web.Nitro
 import qualified Network.WebSockets as WS
 import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
+import Control.Concurrent (forkIO)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TChan (newBroadcastTChanIO, dupTChan, readTChan, writeTChan)
 
 -- | Top level sum of protocols
 data N2OProto a
@@ -77,8 +80,9 @@ nitroProto message = do
 
 wsApp :: Context N2OProto a -> WS.ServerApp
 wsApp cx pending = do
+  chan <- newBroadcastTChanIO
   let path = WS.requestPath $ WS.pendingRequest pending
-      cx1 = cx {cxReq = mkReq {reqPath = path}}
+      cx1 = cx {cxReq = mkReq {reqPath = path}, cxMailBox = chan}
       handlers = cxMiddleware cx1
       applyHandlers hs ctx =
         case hs of
@@ -88,7 +92,13 @@ wsApp cx pending = do
   conn <- WS.acceptRequest pending
   ref <- newIORef cx2
   WS.forkPingThread conn 30
-  listen conn ref
+  forkIO (listen conn ref)
+  forever $ do
+    msg <- atomically $ do
+        rChan <- dupTChan chan
+        readTChan rChan
+    reply <- runReaderT (protoRun msg $ cxProtos cx2) ref
+    process conn reply
 
 -- | Make pending WS request from N2O request
 mkPending :: WS.ConnectionOptions -> Socket -> Req -> IO WS.PendingConnection
@@ -111,7 +121,7 @@ mkPending opts sock req = do
 listen :: WS.Connection -> IORef (Context N2OProto a) -> IO ()
 listen conn ref =
   do pid <- receiveN2O conn ref
-     cx@Context {cxProtos = protos} <- readIORef ref
+     cx@Context {cxProtos = protos, cxMailBox = chan} <- readIORef ref
      forever $ do
        message <- WS.receiveDataMessage conn
        case message of
@@ -121,8 +131,10 @@ listen conn ref =
              Right term ->
                case fromBert term of
                  Just msg -> do
-                   reply <- runReaderT (protoRun msg protos) ref
-                   process conn reply
+                   --reply <- runReaderT (protoRun msg protos) ref
+                   atomically $
+                     writeTChan chan msg
+                   -- process conn reply
                  _ -> return ()
              _ -> return ()
          _ -> error "Unknown message"
