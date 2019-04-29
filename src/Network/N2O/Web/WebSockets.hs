@@ -26,6 +26,7 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (atomically, modifyTVar)
 import Control.Concurrent.STM.TChan (newBroadcastTChanIO, dupTChan, readTChan, writeTChan)
 import Data.ByteString.Random (random)
+import Text.Printf (printf)
 
 -- | Top level sum of protocols
 data N2OProto a
@@ -57,7 +58,7 @@ nitroProto message = do
   cx@Context {cxHandler = handle,cxSessions = sess} <- getContext
   case message of
     msg@(N2ONitro (NitroInit pid)) -> do
-      pid1 <- case pid of {"" -> liftIO $ random(16); _ -> return pid}
+      pid1 <- case pid of {"" -> do {rnd <- liftIO $ random(16); return $ hex rnd}; _ -> return pid}
       liftIO $ atomically $ modifyTVar sess $ \m -> M.alter (\mb -> let s = case mb of {Just s -> s; _ -> ""} in Just s) pid1 m
       handle Init
       acts <- getActions
@@ -80,6 +81,8 @@ nitroProto message = do
       return Empty
   where
     reply eval dat = Io eval dat
+    hex :: C8.ByteString -> C8.ByteString
+    hex = C8.pack . Prelude.concatMap (printf "%02x") . C8.unpack
 
 wsApp :: Context N2OProto a -> WS.ServerApp
 wsApp cx pending = do
