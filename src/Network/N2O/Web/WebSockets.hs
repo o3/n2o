@@ -31,10 +31,11 @@ import Text.Printf (printf)
 -- | Top level sum of protocols
 data N2OProto a
   = N2ONitro (Nitro a)
+  | N2ODirect a
   | Io BS.ByteString
        BS.ByteString
   | Nop
-  deriving (Show)
+  --deriving (Show)
 
 type Cx a = Context N2OProto a
 type CxHandler a = Cx a -> Cx a
@@ -148,7 +149,7 @@ listen conn ref =
 process conn reply =
   case reply of
     Reply a -> WS.sendBinaryData conn (B.encode $ toBert a)
-    x -> error $ "Unknown response type " <> show x
+    x -> error $ "Unknown response type"
 
 receiveN2O conn ref = do
   message <- WS.receiveDataMessage conn
