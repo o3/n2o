@@ -25,6 +25,7 @@ import qualified Network.WebSockets.Stream as WSStream
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (atomically, modifyTVar)
 import Control.Concurrent.STM.TChan (newBroadcastTChanIO, dupTChan, readTChan, writeTChan)
+import Data.ByteString.Random (random)
 
 -- | Top level sum of protocols
 data N2OProto a
@@ -56,12 +57,13 @@ nitroProto message = do
   cx@Context {cxHandler = handle,cxSessions = sess} <- getContext
   case message of
     msg@(N2ONitro (NitroInit pid)) -> do
-      liftIO $ atomically $ modifyTVar sess $ \m -> M.alter (\mb -> let s = case mb of {Just s -> s; _ -> ""} in Just s) pid m
+      pid1 <- case pid of {"" -> liftIO $ random(16); _ -> return pid}
+      liftIO $ atomically $ modifyTVar sess $ \m -> M.alter (\mb -> let s = case mb of {Just s -> s; _ -> ""} in Just s) pid1 m
       handle Init
       acts <- getActions
       putActions ""
 --      liftIO $ putStrLn ("NITRO : " <> show acts)
-      return $ Reply $ reply acts
+      return $ Reply $ reply acts pid1
     msg@(N2ONitro (NitroPickle _source pickled linked)) -> do
       forM_ (M.toList linked) (uncurry put)
       depickled <- depickle pickled
@@ -71,13 +73,13 @@ nitroProto message = do
           acts <- getActions
           putActions ""
 --          liftIO $ putStrLn ("NITRO : " <> show acts)
-          return $ Reply (reply acts)
+          return $ Reply (reply acts "")
         _ -> return Unknown
     msg@(N2ONitro NitroDone) -> do
       handle Terminate
       return Empty
   where
-    reply bs = Io bs BS.empty
+    reply eval dat = Io eval dat
 
 wsApp :: Context N2OProto a -> WS.ServerApp
 wsApp cx pending = do
