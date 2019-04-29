@@ -85,16 +85,12 @@ type N2O f a = ReaderT (Context f a) IO
 sub :: BS.ByteString -> N2O f a ()
 sub topic = do
   cx <- ask
-  liftIO $ putStrLn "sub"
-  liftIO $ print $ cxTid cx
   liftIO $ atomically $ do
     Context{cxPubSub = pubsub,cxOutBox = chan} <- pure cx
     modifyTVar pubsub $ \m -> M.alter (\mbs -> let s = case mbs of {Just s -> s; _ -> []} in Just $ ins chan s) topic m
 
 unsub topic = do
   cx <- ask
-  liftIO $ putStrLn "unsub"
-  liftIO $ print $ cxTid cx
   liftIO $ atomically $ do
     Context{cxPubSub = pubsub,cxOutBox = chan} <- pure cx
     modifyTVar pubsub $ \m -> M.alter (\mbs -> let s = case mbs of {Just s -> s; _ -> []} in Just $ del [] chan s) topic m
@@ -106,10 +102,6 @@ pub topic a = do
     l <- pure $ case M.lookup topic m of {Just s -> s; _ -> []}
     forM_ l (\chan -> do {rChan <- dupTChan chan; writeTChan chan a})
     pure l
-  liftIO $ putStrLn "pub"
-  liftIO $ print $ cxTid cx
-  liftIO $ putStrLn $ show $ length l
---  liftIO $ putStrLn $ show $ (l !! 0) == (l !! 1)
   return ()
 
 fnd x [] = False
@@ -118,7 +110,7 @@ fnd x (y:ys) = if x == y then True else fnd x ys
 ins x ys = if fnd x ys then ys else x:ys
 
 del acc _ [] = acc
-del acc x (y:ys) = if x == y then acc else x:acc
+del acc x (y:ys) = if x == y then del acc x ys else del (y:acc) x ys
 
 -- | Put data to the local state
 put :: (B.Serialize bin) => BS.ByteString -> bin -> N2O f a ()

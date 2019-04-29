@@ -133,7 +133,6 @@ pump conn cx@Context{cxInBox = chan} = do
   forever $ do
     msg <- atomically $ do
         readTChan chan
---    putStrLn $ show $ cxTid cx
     reply <- runReaderT (protoRun msg $ cxProtos cx) cx
     process conn reply
 
@@ -141,7 +140,6 @@ listen :: WS.Connection -> Context N2OProto a -> IO ()
 listen conn cx =
   do pid <- receiveN2O conn cx
      Context {cxProtos = protos, cxOutBox = chan, cxTid = tid} <- pure cx
-     putStrLn $ show tid
      forever $ do
        message <- WS.receiveDataMessage conn
        case message of
