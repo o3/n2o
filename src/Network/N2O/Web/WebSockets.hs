@@ -178,4 +178,4 @@ fromBert _ = Nothing
 
 toBert :: N2OProto a -> Term
 toBert (Io eval dat) =
-  TupleTerm [AtomTerm "io", BytelistTerm eval, BytelistTerm dat]
+  TupleTerm [AtomTerm "io", BinaryTerm eval, BinaryTerm dat]
