@@ -31,7 +31,7 @@ import Text.Printf (printf)
 -- | Top level sum of protocols
 data N2OProto a
   = N2ONitro (Nitro a)
-  | N2ODirect a
+  | N2OClient a
   | Io BS.ByteString
        BS.ByteString
   | Nop
