@@ -29,6 +29,7 @@ import Control.Exception (SomeException)
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TChan
 import Control.Monad (forM_)
+import Control.Concurrent (ThreadId)
 
 -- | An HTTP header
 type Header = (BS.ByteString, BS.ByteString)
@@ -52,11 +53,13 @@ data Context (f :: * -> *) a where
   , cxReq :: Req
   , cxMiddleware :: [Context f a -> Context f a]
   , cxProtos :: [Proto f a]
-  , cxActions :: BS.ByteString
-  , cxDict :: M.Map BS.ByteString BS.ByteString
+  , cxActions :: TVar BS.ByteString
+  , cxDict :: TVar (M.Map BS.ByteString BS.ByteString)
   , cxPubSub :: TVar (M.Map BS.ByteString [TChan (f a)])
-  , cxMailBox :: TChan (f a)
+  , cxInBox :: TChan (f a)
+  , cxOutBox :: TChan (f a)
   , cxSessions :: TVar (M.Map BS.ByteString BS.ByteString)
+  , cxTid :: ThreadId
   } -> Context f a
 
 -- | Result of the message processing
@@ -77,28 +80,37 @@ data Event a
   | Terminate
   deriving Show
 
-type N2O f a = ReaderT (IORef (Context f a)) IO
+type N2O f a = ReaderT (Context f a) IO
 
 sub :: BS.ByteString -> N2O f a ()
 sub topic = do
-  ref <- ask
-  Context{cxPubSub = pubsub,cxMailBox = chan} <- liftIO $ readIORef ref
+  cx <- ask
+  liftIO $ putStrLn "sub"
+  liftIO $ print $ cxTid cx
   liftIO $ atomically $ do
+    Context{cxPubSub = pubsub,cxOutBox = chan} <- pure cx
     modifyTVar pubsub $ \m -> M.alter (\mbs -> let s = case mbs of {Just s -> s; _ -> []} in Just $ ins chan s) topic m
 
 unsub topic = do
-  ref <- ask
-  Context{cxPubSub = pubsub,cxMailBox = chan} <- liftIO $ readIORef ref
+  cx <- ask
+  liftIO $ putStrLn "unsub"
+  liftIO $ print $ cxTid cx
   liftIO $ atomically $ do
+    Context{cxPubSub = pubsub,cxOutBox = chan} <- pure cx
     modifyTVar pubsub $ \m -> M.alter (\mbs -> let s = case mbs of {Just s -> s; _ -> []} in Just $ del [] chan s) topic m
 
 pub topic a = do
-  ref <- ask
-  Context{cxPubSub = pubsub} <- liftIO $ readIORef ref
-  liftIO $ atomically $ do
+  cx@Context{cxPubSub = pubsub} <- ask
+  l <- liftIO $ atomically $ do
     m <- readTVar pubsub
     l <- pure $ case M.lookup topic m of {Just s -> s; _ -> []}
     forM_ l (\chan -> do {rChan <- dupTChan chan; writeTChan chan a})
+    pure l
+  liftIO $ putStrLn "pub"
+  liftIO $ print $ cxTid cx
+  liftIO $ putStrLn $ show $ length l
+--  liftIO $ putStrLn $ show $ (l !! 0) == (l !! 1)
+  return ()
 
 fnd x [] = False
 fnd x (y:ys) = if x == y then True else fnd x ys
@@ -111,15 +123,14 @@ del acc x (y:ys) = if x == y then acc else x:acc
 -- | Put data to the local state
 put :: (B.Serialize bin) => BS.ByteString -> bin -> N2O f a ()
 put k v = do
-  ref <- ask
-  liftIO $ modifyIORef ref (\st@Context{cxDict=dict} -> st{cxDict=(M.insert k (B.encode v) dict)})
+  cx <- ask
+  liftIO $ atomically $ modifyTVar (cxDict cx) (\dict -> M.insert k (B.encode v) dict)
 
 -- | Get data from the local state
 get :: (B.Serialize bin) => BS.ByteString -> N2O f a (Maybe bin)
 get k = do
-  ref <- ReaderT return
-  st <- liftIO $ readIORef ref
-  let m = cxDict st
+  cx <- ReaderT return
+  m <- liftIO $ atomically $ readTVar $ cxDict cx
   case m !? k of
     Just v -> case (B.decode v) of
                 Right x -> return $ Just x
@@ -128,8 +139,8 @@ get k = do
 
 getContext :: N2O f a (Context f a)
 getContext = do
-  ref <- ask
-  liftIO $ readIORef ref
+  cx <- ask
+  pure cx
 
 -- | 'Context' constructor
 mkCx = Context
@@ -137,10 +148,12 @@ mkCx = Context
   , cxHandler = undefined
   , cxMiddleware = []
   , cxProtos = []
-  , cxActions = ""
-  , cxDict = M.empty
+  , cxActions = undefined
+  , cxDict = undefined
   , cxPubSub = undefined
-  , cxMailBox = undefined
+  , cxOutBox = undefined
+  , cxInBox = undefined
+  , cxTid = undefined
   , cxSessions = undefined
   }
 

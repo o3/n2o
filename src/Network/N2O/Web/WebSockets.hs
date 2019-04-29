@@ -22,9 +22,10 @@ import Web.Nitro
 import qualified Network.WebSockets as WS
 import qualified Network.WebSockets.Connection as WSConn
 import qualified Network.WebSockets.Stream as WSStream
-import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (atomically, modifyTVar)
-import Control.Concurrent.STM.TChan (newBroadcastTChanIO, dupTChan, readTChan, writeTChan)
+import Control.Concurrent (forkIO, myThreadId)
+import Control.Concurrent.STM.TVar (TVar, readTVar, newTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar, writeTVar)
+import Control.Concurrent.STM.TChan (newBroadcastTChan, dupTChan, readTChan, writeTChan)
 import Data.ByteString.Random (random)
 import Text.Printf (printf)
 
@@ -42,11 +43,11 @@ type CxHandler a = Cx a -> Cx a
 
 instance NITRO (N2O N2OProto a) where
   putActions a = do
-    ref <- ask
-    liftIO $ modifyIORef ref (\cx -> cx{cxActions = a})
+    cx <- ask
+    liftIO $ atomically $ writeTVar (cxActions cx) a
   getActions = do
-    ref <- ask
-    Context{cxActions = acts} <- liftIO $ readIORef ref
+    Context{cxActions = tvar} <- ask
+    acts <- liftIO $ atomically $ readTVar tvar
     return acts
 
 mkHandler h = \m -> do
@@ -89,9 +90,15 @@ nitroProto message = do
 
 wsApp :: Context N2OProto a -> WS.ServerApp
 wsApp cx pending = do
-  chan <- newBroadcastTChanIO
+  tid <- myThreadId
+  (chanIn,chanOut) <- atomically $ do
+      chanOut <- newBroadcastTChan
+      chanIn <- dupTChan chanOut
+      pure (chanIn,chanOut)
+  acts <- newTVarIO ""
+  dict <- newTVarIO M.empty
   let path = WS.requestPath $ WS.pendingRequest pending
-      cx1 = cx {cxReq = mkReq {reqPath = path}, cxMailBox = chan}
+      cx1 = cx {cxReq = mkReq {reqPath = path}, cxInBox = chanIn, cxOutBox = chanOut, cxTid = tid, cxActions = acts, cxDict = dict}
       handlers = cxMiddleware cx1
       applyHandlers hs ctx =
         case hs of
@@ -99,14 +106,10 @@ wsApp cx pending = do
           (h:hs') -> applyHandlers hs' (h ctx)
       cx2 = applyHandlers handlers cx1
   conn <- WS.acceptRequest pending
-  ref <- newIORef cx2
   WS.forkPingThread conn 30
-  forkIO (listen conn ref)
-  rChan <- atomically $ dupTChan chan
-  forever $ do
-    msg <- atomically $ readTChan rChan
-    reply <- runReaderT (protoRun msg $ cxProtos cx2) ref
-    process conn reply
+--  rChan <- atomically $ dupTChan chan
+  forkIO (pump conn cx2)
+  listen conn cx2
 
 -- | Make pending WS request from N2O request
 mkPending :: WS.ConnectionOptions -> Socket -> Req -> IO WS.PendingConnection
@@ -126,10 +129,19 @@ mkPending opts sock req = do
       , WSConn.pendingStream = stream
       }
 
-listen :: WS.Connection -> IORef (Context N2OProto a) -> IO ()
-listen conn ref =
-  do pid <- receiveN2O conn ref
-     cx@Context {cxProtos = protos, cxMailBox = chan} <- readIORef ref
+pump conn cx@Context{cxInBox = chan} = do
+  forever $ do
+    msg <- atomically $ do
+        readTChan chan
+--    putStrLn $ show $ cxTid cx
+    reply <- runReaderT (protoRun msg $ cxProtos cx) cx
+    process conn reply
+
+listen :: WS.Connection -> Context N2OProto a -> IO ()
+listen conn cx =
+  do pid <- receiveN2O conn cx
+     Context {cxProtos = protos, cxOutBox = chan, cxTid = tid} <- pure cx
+     putStrLn $ show tid
      forever $ do
        message <- WS.receiveDataMessage conn
        case message of
@@ -144,8 +156,8 @@ listen conn ref =
              _ -> return ()
          _ -> error "Unknown message"
      `finally` do
-    cx@Context {cxProtos = protos} <- readIORef ref
-    runReaderT (protoRun (N2ONitro NitroDone) protos) ref
+    Context {cxProtos = protos} <- pure cx
+    runReaderT (protoRun (N2ONitro NitroDone) protos) cx
     return ()
 
 process conn reply =
@@ -153,16 +165,16 @@ process conn reply =
     Reply a -> WS.sendBinaryData conn (B.encode $ toBert a)
     x -> error $ "Unknown response type"
 
-receiveN2O conn ref = do
+receiveN2O conn cx = do
   message <- WS.receiveDataMessage conn
-  cx@Context {cxProtos = protos} <- readIORef ref
+  Context {cxProtos = protos} <- pure cx
   case message of
     WS.Binary _ -> error "Protocol violation: expected text message"
     WS.Text "" _ -> error "Protocol violation: got empty text"
     WS.Text bs _ ->
       case C8.stripPrefix "N2O," (BL.toStrict bs) of
         Just pid -> do
-          reply <- runReaderT (protoRun (N2ONitro $ NitroInit pid) protos) ref
+          reply <- runReaderT (protoRun (N2ONitro $ NitroInit pid) protos) cx
           process conn reply
           return pid
         _ -> error "Protocol violation"
